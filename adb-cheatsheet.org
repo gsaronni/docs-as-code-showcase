@@ -1,0 +1,1499 @@
+#+TITLE: Complete ADB (Android Debug Bridge) Guide
+#+AUTHOR: Claude
+#+DATE: [2025-09-29 Mon]
+#+STARTUP: overview
+#+TODO: TODO NEXT WAITING | DONE CANCELLED
+#+TAGS: essential(e) daily(d) weekly(w) advanced(a)
+
+* What is ADB?                                                     :essential:
+
+ADB (Android Debug Bridge) is a command-line tool that lets you communicate with an Android device:
+
+https://developer.android.com/tools/adb
+
+- *Device Communication* - Send commands to your phone/tablet from computer
+- *File Transfer* - Push and pull files between devices
+- *App Management* - Install, uninstall, and debug applications
+- *Shell Access* - Execute commands directly on the device
+- *Debugging* - Monitor logs, test apps, and diagnose issues
+- *Backup & Restore* - Save and restore app data and settings
+
+*Philosophy*: Direct, powerful control over Android devices through a simple command-line interface.
+
+** Why Use ADB?
+- Backup game saves that don't sync (KotOR, emulators, etc.)
+- Access system files without root
+- Automate device tasks
+- Install apps without Play Store
+- Debug app issues
+- Remove bloatware
+- Advanced customization
+
+* Essential (Can't Work Without)                                   :essential:
+
+** Installation & Setup
+
+*** Windows Installation
+#+BEGIN_EXAMPLE
+1. Download SDK Platform-Tools from:
+   https://developer.android.com/tools/releases/platform-tools
+
+2. Extract ZIP to: C:\platform-tools
+
+3. Add to PATH (optional but recommended):
+   - Search "Environment Variables"
+   - Edit "Path" variable
+   - Add: C:\platform-tools
+   - Click OK
+
+4. Test installation:
+   Open Command Prompt and type: adb version
+#+END_EXAMPLE
+
+*** Linux Installation
+#+BEGIN_EXAMPLE
+# Debian/Ubuntu
+sudo apt update
+sudo apt install adb
+
+# Arch Linux
+sudo pacman -S android-tools
+
+# Fedora
+sudo dnf install android-tools
+
+# Test installation
+adb version
+#+END_EXAMPLE
+
+*** macOS Installation
+#+BEGIN_EXAMPLE
+# Using Homebrew
+brew install android-platform-tools
+
+# Manual installation
+Download from: https://developer.android.com/tools/releases/platform-tools
+Extract and add to PATH in ~/.zshrc or ~/.bash_profile
+
+# Test installation
+adb version
+#+END_EXAMPLE
+
+*** WSL Installation
+#+BEGIN_EXAMPLE
+# In WSL (Ubuntu/Debian)
+sudo apt update
+sudo apt install adb
+
+# For USB connections in WSL2, you'll need usbipd-win
+# Wireless ADB is easier for WSL users
+
+# Test installation
+adb version
+#+END_EXAMPLE
+
+** Phone Setup (Critical!)
+
+*** Enable Developer Options
+#+BEGIN_EXAMPLE
+1. Go to Settings → About Phone
+2. Find "Build Number"
+3. Tap it 7 times rapidly
+4. You'll see: "You are now a developer!"
+#+END_EXAMPLE
+
+*** Enable USB Debugging
+#+BEGIN_EXAMPLE
+1. Settings → System → Developer Options
+2. Toggle "USB Debugging" ON
+3. (Optional) Toggle "Wireless Debugging" ON for wireless connections
+#+END_EXAMPLE
+
+** Connection Methods
+
+*** USB Connection (Most Reliable)
+| Step | Command/Action            | Notes                     |
+|------+---------------------------+---------------------------|
+| 1    | Plug phone into computer  | Use good cable            |
+| 2    | =adb devices=             | List connected devices    |
+| 3    | Accept prompt on phone    | "Allow USB debugging?"    |
+| 4    | =adb devices= again       | Should show device        |
+
+*** Wireless Connection (Android 11+)
+| Step | Command/Action            | Notes                     |
+|------+---------------------------+---------------------------|
+| 1    | Enable Wireless Debugging | Settings → Developer Options |
+| 2    | Tap "Pair device with code" | Note IP:PORT and code   |
+| 3    | =adb pair IP:PORT=        | Use pairing port          |
+| 4    | Enter pairing code        | 6-digit code              |
+| 5    | Use main IP:PORT shown    | Different from pair port  |
+| 6    | =adb connect IP:PORT=     | Connect to device         |
+
+*** Wireless Connection (Android 10 and below)
+#+BEGIN_EXAMPLE
+# First connect via USB
+adb tcpip 5555
+
+# Disconnect USB, then connect wirelessly
+adb connect PHONE_IP:5555
+
+# Find your phone's IP: Settings → About Phone → Status → IP Address
+#+END_EXAMPLE
+
+** Emergency Commands
+| Command              | Action                    | Notes                     |
+|----------------------+---------------------------+---------------------------|
+| =adb devices=        | List connected devices    | First command to try      |
+| =adb kill-server=    | Stop ADB server           | Fix connection issues     |
+| =adb start-server=   | Start ADB server          | Restart ADB               |
+| =adb disconnect=     | Disconnect wireless       | Stop wireless connection  |
+| =adb reconnect=      | Reconnect device          | Fix lost connections      |
+| =adb reboot=         | Reboot phone              | Restart device            |
+
+** Basic Survival Commands
+| Command              | Action                    | Notes                     |
+|----------------------+---------------------------+---------------------------|
+| =adb devices=        | List devices              | Check connection          |
+| =adb shell=          | Enter device shell        | Interactive terminal      |
+| =exit=               | Exit shell                | Return to computer        |
+| =adb reboot=         | Reboot device             | Restart phone             |
+| =adb help=           | Show help                 | List all commands         |
+
+* Common (Daily Tasks)                                                :daily:
+
+** File Transfer
+
+*** Pull Files (Device → Computer)
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb pull /path/on/device .=      | Copy file to current dir  | Most common usage         |
+| =adb pull /sdcard/Download/file.txt= | Pull from Downloads   | Common location           |
+| =adb pull /sdcard/DCIM/Camera/=   | Pull camera photos        | Entire folder             |
+| =adb pull /data/local/tmp/=       | Pull from temp storage    | No root needed            |
+
+*** Push Files (Computer → Device)
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb push file.txt /sdcard/=      | Copy file to device       | Most common usage         |
+| =adb push *.jpg /sdcard/Pictures/= | Push multiple files      | Use wildcards             |
+| =adb push folder/ /sdcard/=       | Push entire folder        | Recursive copy            |
+| =adb push app.apk /data/local/tmp/= | Push to temp storage    | For installation          |
+
+*** Common File Paths
+| Path                              | Description               | Access Level              |
+|-----------------------------------+---------------------------+---------------------------|
+| =/sdcard/=                        | Main storage              | No root needed            |
+| =/sdcard/Download/=               | Downloads folder          | No root needed            |
+| =/sdcard/DCIM/Camera/=            | Camera photos             | No root needed            |
+| =/sdcard/Android/data/PACKAGE/=   | App external storage      | No root (Android 10-)     |
+| =/data/data/PACKAGE/=             | App internal data         | Root or app backup needed |
+| =/data/local/tmp/=                | Temporary storage         | No root needed            |
+
+** App Management
+
+*** Install & Uninstall Apps
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb install app.apk=             | Install APK               | Basic installation        |
+| =adb install -r app.apk=          | Reinstall/update app      | Keep data                 |
+| =adb install -d app.apk=          | Allow downgrade           | Install older version     |
+| =adb uninstall PACKAGE_NAME=      | Uninstall app             | Complete removal          |
+| =adb uninstall -k PACKAGE_NAME=   | Uninstall but keep data   | Remove app only           |
+
+*** List Installed Apps
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell pm list packages=      | List all packages         | Complete list             |
+| =adb shell pm list packages -3=   | List user apps only       | Exclude system apps       |
+| =adb shell pm list packages -s=   | List system apps          | System packages           |
+| =adb shell pm list packages | grep KEYWORD= | Search packages  | Find specific app         |
+
+*** App Information
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell pm path PACKAGE=       | Find APK location         | Get app path              |
+| =adb shell dumpsys package PACKAGE= | Detailed app info       | Everything about app      |
+| =adb shell pm clear PACKAGE=      | Clear app data            | Reset app                 |
+
+** Game Save Backups (The Holy Grail!)
+
+*** Finding Game Save Locations
+#+BEGIN_EXAMPLE
+# Most games store saves in one of these locations:
+
+# External storage (no root needed)
+/sdcard/Android/data/PACKAGE_NAME/files/
+
+# Internal data (needs special handling)
+/data/data/PACKAGE_NAME/
+
+# Common game save locations:
+/sdcard/Android/obb/PACKAGE_NAME/         # Large game files
+/sdcard/Android/data/PACKAGE_NAME/files/  # Save files
+#+END_EXAMPLE
+
+*** Backup Game Saves (KotOR Example)
+#+BEGIN_EXAMPLE
+# Find the package name first
+adb shell pm list packages | grep kotor
+# Result: com.aspyr.swkotor
+
+# Backup external data (if accessible)
+adb pull /sdcard/Android/data/com.aspyr.swkotor/ ./kotor_backup/
+
+# For internal data, use backup command
+adb backup -f kotor_backup.ab com.aspyr.swkotor
+
+# Or if you have specific save folder
+adb pull /sdcard/Android/data/com.aspyr.swkotor/files/saves/ ./kotor_saves/
+#+END_EXAMPLE
+
+*** Restore Game Saves
+#+BEGIN_EXAMPLE
+# Restore external data
+adb push ./kotor_backup/ /sdcard/Android/data/com.aspyr.swkotor/
+
+# Restore from backup file
+adb restore kotor_backup.ab
+
+# Restore specific saves
+adb push ./kotor_saves/ /sdcard/Android/data/com.aspyr.swkotor/files/saves/
+#+END_EXAMPLE
+
+*** Automated Backup Script (Linux/macOS)
+#+BEGIN_SRC bash
+#!/bin/bash
+# save as: backup_game.sh
+
+PACKAGE="com.aspyr.swkotor"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="$HOME/android_backups/kotor_$DATE"
+
+echo "Backing up $PACKAGE..."
+mkdir -p "$BACKUP_DIR"
+
+# Backup external data
+adb pull /sdcard/Android/data/$PACKAGE/ "$BACKUP_DIR/"
+
+echo "Backup complete: $BACKUP_DIR"
+#+END_SRC
+
+*** Automated Backup Script (Windows)
+#+BEGIN_SRC bat
+@echo off
+REM save as: backup_game.bat
+
+set PACKAGE=com.aspyr.swkotor
+set BACKUP_DIR=%USERPROFILE%\android_backups\kotor_%date:~-4,4%%date:~-10,2%%date:~-7,2%
+
+echo Backing up %PACKAGE%...
+mkdir "%BACKUP_DIR%"
+
+adb pull /sdcard/Android/data/%PACKAGE%/ "%BACKUP_DIR%"
+
+echo Backup complete: %BACKUP_DIR%
+pause
+#+END_SRC
+
+*** Common Game Package Names
+| Game                  | Package Name                      | Notes                     |
+|-----------------------+-----------------------------------+---------------------------|
+| KotOR                 | =com.aspyr.swkotor=               | Star Wars KOTOR           |
+| NetherSX2             | =xyz.aethersx2.android=           | PS2 emulator              |
+| RetroArch             | =com.retroarch=                   | Multi-emulator            |
+| Drastic               | =com.dsemu.drastic=               | DS emulator               |
+| PPSSPP                | =org.ppsspp.ppsspp=               | PSP emulator              |
+| Minecraft PE          | =com.mojang.minecraftpe=          | Minecraft                 |
+| Stardew Valley        | =com.chucklefish.stardewvalley=   | Farming sim               |
+| Terraria              | =com.and.games505.TerrariaPaid=   | Adventure game            |
+
+** Shell Commands
+
+*** Basic Shell Operations
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell=                       | Enter shell               | Interactive mode          |
+| =adb shell COMMAND=               | Run single command        | Quick execution           |
+| =adb shell "cmd1; cmd2"=          | Run multiple commands     | Chain commands            |
+| =adb shell su=                    | Switch to root            | Requires root access      |
+
+### Common Shell Commands
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell ls /sdcard/=           | List files                | Directory contents        |
+| =adb shell pwd=                   | Print working directory   | Current location          |
+| =adb shell cd /path/=             | Change directory          | Navigate folders          |
+| =adb shell cat file.txt=          | Display file contents     | Read text files           |
+| =adb shell rm file.txt=           | Remove file               | Delete file               |
+| =adb shell mkdir /sdcard/newfolder= | Create directory        | Make new folder           |
+| =adb shell df -h=                 | Show disk space           | Storage information       |
+| =adb shell free -h=               | Show memory usage         | RAM information           |
+
+** Screen & Input Control
+
+*** Screenshots & Screen Recording
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell screencap /sdcard/screenshot.png= | Take screenshot    | Save to device            |
+| =adb pull /sdcard/screenshot.png= | Get screenshot            | Copy to computer          |
+| =adb shell screenrecord /sdcard/video.mp4= | Record screen      | Start recording           |
+| =adb shell screenrecord --time-limit 30 /sdcard/video.mp4= | Record 30s | Time limit     |
+
+*** Input Simulation
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell input text "Hello"=    | Type text                 | Simulate typing           |
+| =adb shell input tap X Y=         | Tap screen                | X Y coordinates           |
+| =adb shell input swipe X1 Y1 X2 Y2= | Swipe gesture          | From X1,Y1 to X2,Y2       |
+| =adb shell input keyevent 3=      | Press Home button         | Simulate buttons          |
+| =adb shell input keyevent 4=      | Press Back button         | Go back                   |
+| =adb shell input keyevent 26=     | Press Power button        | Lock/unlock screen        |
+
+*** Common Key Events
+| Code | Key                       | Notes                     |
+|------+---------------------------+---------------------------|
+| 3    | HOME                      | Home screen               |
+| 4    | BACK                      | Back button               |
+| 26   | POWER                     | Power/lock button         |
+| 24   | VOLUME_UP                 | Volume up                 |
+| 25   | VOLUME_DOWN               | Volume down               |
+| 82   | MENU                      | Menu button               |
+| 85   | PLAY_PAUSE                | Media control             |
+| 127  | SEARCH                    | Search button             |
+
+** Logging & Debugging
+
+*** View Logs
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb logcat=                      | View live logs            | All system logs           |
+| =adb logcat -c=                   | Clear log buffer          | Start fresh               |
+| =adb logcat *:E=                  | Show errors only          | Filter by priority        |
+| =adb logcat > log.txt=            | Save logs to file         | Redirect output           |
+| =adb logcat | grep KEYWORD=       | Search logs               | Filter specific content   |
+
+*** Log Priority Levels
+| Level | Code | Description               |
+|-------+------+---------------------------|
+| Verbose | V  | Everything                |
+| Debug | D    | Debug messages            |
+| Info  | I    | General information       |
+| Warning | W  | Potential problems        |
+| Error | E    | Actual errors             |
+| Fatal | F    | Critical failures         |
+
+* Helpful (Weekly Tasks)                                             :weekly:
+
+** Package Management Deep Dive
+
+*** Finding Package Names
+#+BEGIN_EXAMPLE
+# List all packages
+adb shell pm list packages
+
+# Search for specific app
+adb shell pm list packages | grep netflix
+# Result: package:com.netflix.mediaclient
+
+# List with full paths
+adb shell pm list packages -f
+
+# Show only enabled packages
+adb shell pm list packages -e
+
+# Show only disabled packages
+adb shell pm list packages -d
+#+END_EXAMPLE
+
+*** Package Information
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell pm path PACKAGE=       | Show APK path             | Location of APK           |
+| =adb shell dumpsys package PACKAGE= | Complete package info   | Everything about package  |
+| =adb shell pm dump PACKAGE=       | Alternative info command  | Package details           |
+| =adb shell pm get-install-location= | Show install location   | Internal/external         |
+
+*** Disable/Enable System Apps (No Root!)
+#+BEGIN_EXAMPLE
+# Disable bloatware (doesn't uninstall, just hides)
+adb shell pm disable-user --user 0 com.facebook.system
+
+# Re-enable app
+adb shell pm enable com.facebook.system
+
+# Check if app is enabled
+adb shell pm list packages -e | grep facebook
+
+# List all disabled packages
+adb shell pm list packages -d
+#+END_EXAMPLE
+
+*** Extract APK from Device
+#+BEGIN_EXAMPLE
+# Find APK path
+adb shell pm path com.example.app
+# Result: package:/data/app/com.example.app-1/base.apk
+
+# Pull the APK
+adb pull /data/app/com.example.app-1/base.apk ./app.apk
+
+# One-liner to extract APK
+adb pull $(adb shell pm path com.example.app | cut -d: -f2) ./app.apk
+#+END_EXAMPLE
+
+** Advanced Backup & Restore
+
+*** Full Device Backup
+#+BEGIN_EXAMPLE
+# Backup everything (requires phone approval)
+adb backup -all -apk -shared -system -f full_backup.ab
+
+# Backup specific app with data
+adb backup -f app_backup.ab com.example.app
+
+# Backup multiple apps
+adb backup -f multi_backup.ab com.app1 com.app2 com.app3
+
+# Backup without APK files (data only)
+adb backup -noapk -f data_backup.ab com.example.app
+#+END_EXAMPLE
+
+*** Restore from Backup
+#+BEGIN_EXAMPLE
+# Restore full backup
+adb restore full_backup.ab
+
+# Phone will prompt for confirmation
+# Follow on-screen instructions
+#+END_EXAMPLE
+
+*** Backup Options Explained
+| Option      | Description               | Notes                     |
+|-------------+---------------------------+---------------------------|
+| =-all=      | Backup all apps           | Everything installed      |
+| =-apk=      | Include APK files         | App binaries              |
+| =-noapk=    | Exclude APK files         | Data only                 |
+| =-shared=   | Include shared storage    | SD card data              |
+| =-noshared= | Exclude shared storage    | Skip SD card              |
+| =-system=   | Include system apps       | System packages           |
+| =-nosystem= | Exclude system apps       | User apps only            |
+| =-f=        | Output filename           | Where to save             |
+
+*** Converting .ab Backup Files
+#+BEGIN_EXAMPLE
+# Android Backup files (.ab) can be converted to tar
+
+# Extract .ab to tar (Linux/macOS)
+dd if=backup.ab bs=24 skip=1 | openssl zlib -d > backup.tar
+
+# Extract tar
+tar -xvf backup.tar
+
+# For Windows, use Android Backup Extractor tool
+# https://github.com/nelenkov/android-backup-extractor
+#+END_EXAMPLE
+
+** Batch Operations & Automation
+
+### Install Multiple APKs
+#+BEGIN_SRC bash
+#!/bin/bash
+# Install all APKs in current directory
+
+for apk in *.apk; do
+    echo "Installing $apk..."
+    adb install -r "$apk"
+done
+#+END_SRC
+
+*** Backup All User Apps
+#+BEGIN_SRC bash
+#!/bin/bash
+# Backup all user-installed apps
+
+BACKUP_DIR="./app_backups"
+mkdir -p "$BACKUP_DIR"
+
+# Get list of user apps
+adb shell pm list packages -3 | cut -d: -f2 | while read package; do
+    echo "Backing up $package..."
+    adb backup -f "$BACKUP_DIR/${package}.ab" "$package"
+done
+#+END_SRC
+
+*** Clean Up Storage
+#+BEGIN_SRC bash
+#!/bin/bash
+# Clear cache for all apps
+
+adb shell pm list packages | cut -d: -f2 | while read package; do
+    echo "Clearing cache for $package..."
+    adb shell pm clear "$package"
+done
+#+END_SRC
+
+** Network & Connection Management
+
+*** WiFi Management
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell svc wifi enable=       | Enable WiFi               | Turn on WiFi              |
+| =adb shell svc wifi disable=      | Disable WiFi              | Turn off WiFi             |
+| =adb shell svc data enable=       | Enable mobile data        | Turn on data              |
+| =adb shell svc data disable=      | Disable mobile data       | Turn off data             |
+
+*** Bluetooth Management
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell svc bluetooth enable=  | Enable Bluetooth          | Turn on BT                |
+| =adb shell svc bluetooth disable= | Disable Bluetooth         | Turn off BT               |
+
+*** Connection Information
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell ip addr show wlan0=    | Show WiFi IP              | Network info              |
+| =adb shell dumpsys wifi=          | WiFi details              | Complete WiFi info        |
+| =adb shell dumpsys battery=       | Battery information       | Power status              |
+
+** Performance & System Info
+
+*** System Information
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell getprop ro.build.version.release= | Android version    | OS version                |
+| =adb shell getprop ro.product.model= | Device model           | Phone model               |
+| =adb shell getprop ro.product.manufacturer= | Manufacturer      | Brand name                |
+| =adb shell getprop=               | All properties            | Complete system info      |
+
+*** Resource Monitoring
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell top=                   | Running processes         | Like Linux top            |
+| =adb shell ps=                    | List all processes        | Process list              |
+| =adb shell dumpsys meminfo=       | Memory information        | RAM usage                 |
+| =adb shell dumpsys cpuinfo=       | CPU information           | Processor usage           |
+| =adb shell dumpsys battery=       | Battery status            | Power info                |
+
+*** Storage Information
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell df -h=                 | Disk space                | Human-readable format     |
+| =adb shell du -h /sdcard/=        | Directory size            | Folder usage              |
+| =adb shell sm list-volumes=       | List storage volumes      | Available storage         |
+
+* Advanced (Setup/Troubleshooting)                                :advanced:
+
+** Multiple Device Management
+
+*** Working with Multiple Devices
+#+BEGIN_EXAMPLE
+# List all connected devices
+adb devices
+# Result shows device IDs:
+# ABC123456    device
+# XYZ789012    device
+
+# Target specific device
+adb -s ABC123456 shell
+adb -s ABC123456 install app.apk
+adb -s ABC123456 pull /sdcard/file.txt
+
+# Use device serial number
+adb -s SERIAL_NUMBER command
+
+# Use USB device
+adb -d command
+
+# Use emulator
+adb -e command
+#+END_EXAMPLE
+
+*** Device Selection Table
+| Option          | Meaning                   | Use Case                  |
+|-----------------+---------------------------+---------------------------|
+| =-s SERIAL=     | Specific device           | Multiple devices          |
+| =-d=            | USB device                | Physical phone only       |
+| =-e=            | Emulator                  | Virtual device only       |
+| =-t TRANSPORT=  | Transport ID              | Advanced targeting        |
+
+** Root Operations (Requires Rooted Device)
+
+*** Root Commands
+#+BEGIN_EXAMPLE
+# Enter root shell
+adb shell
+su
+
+# Or directly
+adb shell su
+
+# Root file operations
+adb shell su -c "ls /data/data/"
+adb shell su -c "cp /system/app/app.apk /sdcard/"
+
+# Remount system as writable
+adb shell su -c "mount -o rw,remount /system"
+
+# Remount as read-only
+adb shell su -c "mount -o ro,remount /system"
+#+END_EXAMPLE
+
+*** Root Backup (Full Access)
+#+BEGIN_EXAMPLE
+# Backup app with full data access
+adb shell su -c "tar -czf /sdcard/app_backup.tar.gz /data/data/com.example.app"
+adb pull /sdcard/app_backup.tar.gz
+
+# Restore
+adb push app_backup.tar.gz /sdcard/
+adb shell su -c "tar -xzf /sdcard/app_backup.tar.gz -C /"
+#+END_EXAMPLE
+
+** Advanced File Operations
+
+*** Batch File Transfer
+#+BEGIN_SRC bash
+#!/bin/bash
+# Pull all photos from phone
+
+SOURCE="/sdcard/DCIM/Camera/"
+DEST="./phone_photos/"
+
+mkdir -p "$DEST"
+
+adb shell "ls $SOURCE" | tr -d '\r' | while read file; do
+    echo "Pulling $file..."
+    adb pull "$SOURCE$file" "$DEST"
+done
+#+END_SRC
+
+*** Sync Folders
+#+BEGIN_SRC bash
+#!/bin/bash
+# Sync folder from phone to computer
+
+adb shell "find /sdcard/Music -type f" | tr -d '\r' | while read file; do
+    local_path="./music${file#/sdcard/Music}"
+    mkdir -p "$(dirname "$local_path")"
+    adb pull "$file" "$local_path"
+done
+#+END_SRC
+
+*** File Permissions
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb shell chmod 777 /path/file=  | Full permissions          | Read/write/execute all    |
+| =adb shell chmod 644 /path/file=  | Standard file permissions | Owner rw, others r        |
+| =adb shell chown user:group file= | Change ownership          | Requires root             |
+
+** Advanced Shell Scripting
+
+*** Automated Testing Script
+#+BEGIN_SRC bash
+#!/bin/bash
+# Automated app testing
+
+PACKAGE="com.example.app"
+
+echo "Installing app..."
+adb install -r app.apk
+
+echo "Starting app..."
+adb shell monkey -p $PACKAGE -c android.intent.category.LAUNCHER 1
+
+echo "Running test actions..."
+sleep 5
+adb shell input tap 500 1000
+sleep 2
+adb shell input swipe 500 1500 500 500
+sleep 2
+adb shell input text "TestInput"
+
+echo "Capturing screenshot..."
+adb shell screencap /sdcard/test_result.png
+adb pull /sdcard/test_result.png
+
+echo "Collecting logs..."
+adb logcat -d > test_logs.txt
+
+echo "Test complete!"
+#+END_SRC
+
+*** Device Setup Automation
+#+BEGIN_SRC bash
+#!/bin/bash
+# Automated device setup script
+
+echo "Setting up device..."
+
+# Disable animations for testing
+adb shell settings put global window_animation_scale 0
+adb shell settings put global transition_animation_scale 0
+adb shell settings put global animator_duration_scale 0
+
+# Set screen timeout to 30 minutes
+adb shell settings put system screen_off_timeout 1800000
+
+# Enable stay awake while charging
+adb shell settings put global stay_on_while_plugged_in 3
+
+# Install apps
+for apk in apps/*.apk; do
+    echo "Installing $(basename $apk)..."
+    adb install -r "$apk"
+done
+
+# Restore data
+for backup in backups/*.ab; do
+    echo "Restoring $(basename $backup)..."
+    adb restore "$backup"
+done
+
+echo "Setup complete!"
+#+END_SRC
+
+** Troubleshooting Common Issues
+
+*** Connection Problems
+
+**** Device Not Detected
+#+BEGIN_EXAMPLE
+# 1. Check if ADB is running
+adb devices
+
+# 2. Kill and restart ADB server
+adb kill-server
+adb start-server
+adb devices
+
+# 3. Check USB drivers (Windows)
+# Device Manager → Android Device → Update Driver
+
+# 4. Try different USB port/cable
+
+# 5. Revoke USB debugging authorization
+# Settings → Developer Options → Revoke USB debugging authorizations
+# Then reconnect and allow again
+
+# 6. Check for conflicting ADB servers
+# Close Android Studio, emulators, other dev tools
+#+END_EXAMPLE
+
+**** Wireless Connection Fails
+#+BEGIN_EXAMPLE
+# 1. Make sure devices on same network
+adb shell ip addr show wlan0
+# Note the IP address
+
+# 2. Check if port is open
+adb shell netstat -an | grep 5555
+
+# 3. Restart wireless debugging
+# Toggle off/on in Developer Options
+
+# 4. Re-pair the device
+adb pair IP:PAIR_PORT
+# Enter pairing code
+
+# 5. Connect with correct port
+adb connect IP:CONNECT_PORT
+# Use the main port, not pairing port
+#+END_EXAMPLE
+
+*** Permission Issues
+
+**** Access Denied Errors
+#+BEGIN_EXAMPLE
+# For Android 11+ scoped storage issues
+# Apps can't access /sdcard/Android/data/ easily
+
+# Option 1: Use app's backup function
+adb backup -f backup.ab PACKAGE_NAME
+
+# Option 2: Use content:// URIs (advanced)
+adb shell content query --uri content://media/external/file
+
+# Option 3: Use SAF (Storage Access Framework)
+# User must grant permission via file picker
+
+# Option 4: Root access
+adb shell su -c "cp /sdcard/Android/data/PACKAGE/file.txt /sdcard/"
+adb pull /sdcard/file.txt
+#+END_EXAMPLE
+
+*** Slow Transfer Speeds
+#+BEGIN_EXAMPLE
+# 1. Use USB 3.0 port if available
+
+# 2. Disable MTP during transfer
+adb shell svc usb setFunctions mtp false
+
+# 3. Close unnecessary apps on phone
+
+# 4. Use compression for large transfers
+tar -czf - folder/ | adb shell "cat > /sdcard/archive.tar.gz"
+
+# 5. Check cable quality - use official cables
+#+END_EXAMPLE
+
+*** Installation Failures
+#+BEGIN_EXAMPLE
+# Error: INSTALL_FAILED_INSUFFICIENT_STORAGE
+adb shell pm clear PACKAGE  # Clear app cache
+adb shell pm trim-caches 500M  # Free up space
+
+# Error: INSTALL_FAILED_UPDATE_INCOMPATIBLE
+adb uninstall PACKAGE  # Completely remove first
+adb install app.apk
+
+# Error: INSTALL_FAILED_VERSION_DOWNGRADE
+adb install -d app.apk  # Allow downgrade
+
+# Error: INSTALL_FAILED_INVALID_APK
+# APK might be corrupted, re-download
+
+# Error: INSTALL_FAILED_ALREADY_EXISTS
+adb install -r app.apk  # Reinstall flag
+#+END_EXAMPLE
+
+** Advanced ADB Server Management
+
+*** ADB Server Configuration
+#+BEGIN_EXAMPLE
+# Set ADB server port (default: 5037)
+export ANDROID_ADB_SERVER_PORT=5038
+adb start-server
+
+# Check ADB version
+adb version
+
+# ADB server host (for remote ADB)
+export ANDROID_ADB_SERVER_HOST=192.168.1.100
+adb devices
+
+# Kill all ADB processes
+adb kill-server
+pkill adb  # Linux/macOS
+taskkill /F /IM adb.exe  # Windows
+#+END_EXAMPLE
+
+*** Remote ADB Setup
+#+BEGIN_EXAMPLE
+# On remote machine (where phone is connected)
+adb -a -P 5037 nodaemon server
+
+# On local machine
+export ANDROID_ADB_SERVER_HOST=remote-ip
+export ANDROID_ADB_SERVER_PORT=5037
+adb devices
+#+END_EXAMPLE
+
+** Custom ROM & Recovery Operations
+
+*** Boot into Recovery/Bootloader
+| Command                           | Action                    | Notes                     |
+|-----------------------------------+---------------------------+---------------------------|
+| =adb reboot recovery=             | Boot to recovery mode     | Access recovery menu      |
+| =adb reboot bootloader=           | Boot to bootloader        | Fastboot mode             |
+| =adb reboot download=             | Boot to download mode     | Samsung devices           |
+| =adb reboot fastboot=             | Boot to fastboot          | Alternative command       |
+
+*** Fastboot Commands (When in Bootloader)
+#+BEGIN_EXAMPLE
+# Note: These require fastboot, not ADB
+# But included for completeness
+
+fastboot devices               # List devices
+fastboot flash recovery recovery.img  # Flash recovery
+fastboot flash boot boot.img   # Flash boot image
+fastboot reboot                # Reboot device
+fastboot oem unlock            # Unlock bootloader (caution!)
+#+END_EXAMPLE
+
+*** Sideload Updates (Recovery Mode)
+#+BEGIN_EXAMPLE
+# Boot to recovery
+adb reboot recovery
+
+# In recovery, select "Apply update from ADB"
+# Then sideload ZIP
+adb sideload update.zip
+
+# Monitor progress
+adb devices
+# Should show: SERIAL    sideload
+#+END_EXAMPLE
+
+** Database Operations
+
+*** Working with App Databases
+#+BEGIN_EXAMPLE
+# List databases for an app
+adb shell "ls /data/data/PACKAGE/databases/"
+
+# Pull database
+adb pull /data/data/PACKAGE/databases/database.db
+
+# View database (requires sqlite3 on device or computer)
+adb shell sqlite3 /data/data/PACKAGE/databases/database.db
+# Or pull and view locally
+
+# Backup database
+adb shell "su -c cp /data/data/PACKAGE/databases/database.db /sdcard/"
+adb pull /sdcard/database.db
+#+END_EXAMPLE
+
+*** SQLite Commands (For Game Saves!)
+#+BEGIN_EXAMPLE
+# Access database
+adb shell sqlite3 /data/data/PACKAGE/databases/game.db
+
+# Common SQLite commands
+.tables                    # List tables
+.schema table_name        # Show table structure
+SELECT * FROM saves;      # Query data
+.quit                     # Exit
+
+# Export database to CSV
+adb shell "sqlite3 /data/data/PACKAGE/databases/game.db \
+  'SELECT * FROM saves;' > /sdcard/saves.csv"
+#+END_EXAMPLE
+
+** Security & Privacy
+
+*** Certificate Management
+#+BEGIN_EXAMPLE
+# View installed certificates
+adb shell "ls /system/etc/security/cacerts/"
+
+# User certificates
+adb shell "ls /data/misc/user/0/cacerts-added/"
+#+END_EXAMPLE
+
+*** Permission Management
+#+BEGIN_EXAMPLE
+# Grant permission to app
+adb shell pm grant PACKAGE android.permission.PERMISSION_NAME
+
+# Revoke permission
+adb shell pm revoke PACKAGE android.permission.PERMISSION_NAME
+
+# List all permissions for app
+adb shell dumpsys package PACKAGE | grep permission
+#+END_EXAMPLE
+
+*** Common Permissions
+| Permission                        | Description               |
+|-----------------------------------|---------------------------|
+| =android.permission.CAMERA=       | Camera access             |
+| =android.permission.READ_EXTERNAL_STORAGE= | Read files       |
+| =android.permission.WRITE_EXTERNAL_STORAGE= | Write files     |
+| =android.permission.ACCESS_FINE_LOCATION= | GPS location      |
+| =android.permission.RECORD_AUDIO= | Microphone access         |
+| =android.permission.READ_CONTACTS= | Contact list access      |
+
+** Performance Optimization
+
+*** Optimize ADB Performance
+#+BEGIN_SRC elisp
+# Add to ~/.bashrc or ~/.zshrc (Linux/macOS)
+export ANDROID_SERIAL=YOUR_DEVICE_SERIAL  # Skip -s flag
+alias adb-fast='adb shell settings put global window_animation_scale 0'
+#+END_SRC
+
+*** Batch Operation Optimization
+#+BEGIN_SRC bash
+#!/bin/bash
+# Parallel file transfer (faster for many files)
+
+find ./photos -type f -name "*.jpg" | xargs -P 4 -I {} adb push {} /sdcard/Photos/
+
+# -P 4 means 4 parallel processes
+#+END_SRC
+
+** Advanced Emulator-Specific Operations
+
+*** Emulator-Specific Package Names
+| Emulator              | Package Name                      |
+|-----------------------+-----------------------------------|
+| NetherSX2/AetherSX2   | =xyz.aethersx2.android=           |
+| PPSSPP                | =org.ppsspp.ppsspp=               |
+| RetroArch             | =com.retroarch=                   |
+| DraStic DS            | =com.dsemu.drastic=               |
+| Dolphin               | =org.dolphinemu.dolphinemu=       |
+| Citra (3DS)           | =org.citra.citra_emu=             |
+| DuckStation (PS1)     | =com.github.stenzek.duckstation=  |
+| M64Plus FZ (N64)      | =org.mupen64plusae.v3.fzurita=    |
+
+*** Emulator Save Locations
+#+BEGIN_EXAMPLE
+# PPSSPP saves
+/sdcard/PSP/SAVEDATA/
+/sdcard/PSP/PPSSPP_STATE/
+
+# RetroArch saves
+/sdcard/RetroArch/saves/
+/sdcard/RetroArch/states/
+
+# DraStic saves
+/sdcard/DraStic/Backup/
+/sdcard/DraStic/Savestates/
+
+# NetherSX2 saves
+/sdcard/Android/data/xyz.aethersx2.android/files/memcards/
+/sdcard/Android/data/xyz.aethersx2.android/files/sstates/
+#+END_EXAMPLE
+
+*** Backup Emulator Saves Script
+#+BEGIN_SRC bash
+#!/bin/bash
+# Comprehensive emulator backup
+
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_ROOT="$HOME/emulator_backups/$DATE"
+
+# PPSSPP
+echo "Backing up PPSSPP..."
+adb pull /sdcard/PSP/SAVEDATA/ "$BACKUP_ROOT/ppsspp_saves/"
+adb pull /sdcard/PSP/PPSSPP_STATE/ "$BACKUP_ROOT/ppsspp_states/"
+
+# RetroArch
+echo "Backing up RetroArch..."
+adb pull /sdcard/RetroArch/saves/ "$BACKUP_ROOT/retroarch_saves/"
+adb pull /sdcard/RetroArch/states/ "$BACKUP_ROOT/retroarch_states/"
+
+# NetherSX2
+echo "Backing up NetherSX2..."
+adb pull /sdcard/Android/data/xyz.aethersx2.android/files/ "$BACKUP_ROOT/nethersx2/"
+
+# DraStic
+echo "Backing up DraStic..."
+adb pull /sdcard/DraStic/ "$BACKUP_ROOT/drastic/"
+
+echo "Backup complete: $BACKUP_ROOT"
+#+END_SRC
+
+* Practical Workflows & Use Cases                                    :workflow:
+
+** Game Save Management Workflow
+
+*** Daily Backup Routine
+#+BEGIN_EXAMPLE
+1. Connect phone via wireless ADB
+   adb connect PHONE_IP:PORT
+
+2. Backup current saves
+   ./backup_saves.sh
+
+3. Play games normally
+
+4. Before bed, backup again
+   ./backup_saves.sh
+#+END_EXAMPLE
+
+*** Cross-Device Game Save Transfer
+#+BEGIN_EXAMPLE
+# From Phone A to Phone B
+
+# On Phone A
+adb -s PHONE_A pull /sdcard/Android/data/PACKAGE/files/saves/ ./saves/
+
+# On Phone B  
+adb -s PHONE_B push ./saves/ /sdcard/Android/data/PACKAGE/files/saves/
+#+END_EXAMPLE
+
+*** Cloud Backup Integration
+#+BEGIN_SRC bash
+#!/bin/bash
+# Backup to cloud storage
+
+BACKUP_DIR="/tmp/android_backup"
+PACKAGE="com.aspyr.swkotor"
+
+# Create backup
+adb pull /sdcard/Android/data/$PACKAGE/ "$BACKUP_DIR/"
+
+# Upload to cloud (example with rclone)
+rclone sync "$BACKUP_DIR/" "gdrive:AndroidBackups/kotor/"
+
+# Or use Dropbox/OneDrive CLI tools
+#+END_SRC
+
+** Development Workflow
+
+*** App Development Testing
+#+BEGIN_EXAMPLE
+# 1. Build APK
+./gradlew assembleDebug
+
+# 2. Install on device
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# 3. Launch app
+adb shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
+
+# 4. Monitor logs
+adb logcat | grep "MyApp"
+
+# 5. Take screenshot of result
+adb shell screencap /sdcard/test.png
+adb pull /sdcard/test.png
+#+END_EXAMPLE
+
+*** Automated Testing Loop
+#+BEGIN_SRC bash
+#!/bin/bash
+# Continuous testing script
+
+while true; do
+    echo "Building app..."
+    ./gradlew assembleDebug || exit 1
+    
+    echo "Installing..."
+    adb install -r app/build/outputs/apk/debug/app-debug.apk
+    
+    echo "Testing..."
+    adb shell am instrument -w com.example.app.test/androidx.test.runner.AndroidJUnitRunner
+    
+    echo "Collecting results..."
+    adb pull /sdcard/test-results/ ./results/
+    
+    echo "Waiting for changes..."
+    sleep 60
+done
+#+END_SRC
+
+** Media Management Workflow
+
+*** Photo/Video Backup
+#+BEGIN_SRC bash
+#!/bin/bash
+# Backup new photos/videos
+
+LAST_BACKUP="$HOME/.last_photo_backup"
+DEST="$HOME/Pictures/Phone"
+
+# Get modification time of last backup
+if [ -f "$LAST_BACKUP" ]; then
+    LAST_TIME=$(cat "$LAST_BACKUP")
+else
+    LAST_TIME="1970-01-01"
+fi
+
+# Find new files
+adb shell "find /sdcard/DCIM -type f -newer '$LAST_TIME'" | while read file; do
+    adb pull "$file" "$DEST/"
+done
+
+# Update timestamp
+date > "$LAST_BACKUP"
+#+END_SRC
+
+*** Music Sync
+#+BEGIN_SRC bash
+#!/bin/bash
+# Sync music library to phone
+
+SOURCE="$HOME/Music"
+DEST="/sdcard/Music"
+
+# Remove old music
+adb shell "rm -rf $DEST/*"
+
+# Push new music
+find "$SOURCE" -type f \( -name "*.mp3" -o -name "*.flac" -o -name "*.m4a" \) | while read file; do
+    relative_path="${file#$SOURCE/}"
+    dest_dir="$DEST/$(dirname "$relative_path")"
+    
+    adb shell "mkdir -p '$dest_dir'"
+    adb push "$file" "$dest_dir/"
+done
+
+echo "Music sync complete!"
+#+END_SRC
+
+** System Maintenance Workflow
+
+### Weekly Device Cleanup
+#+BEGIN_SRC bash
+#!/bin/bash
+# Weekly maintenance script
+
+echo "=== Weekly Device Maintenance ==="
+
+# 1. Clear app caches
+echo "Clearing app caches..."
+adb shell pm list packages | cut -d: -f2 | while read package; do
+    adb shell pm clear "$package" 2>/dev/null
+done
+
+# 2. Clear download folder
+echo "Cleaning downloads..."
+adb shell "rm -rf /sdcard/Download/*.tmp"
+adb shell "rm -rf /sdcard/Download/*.part"
+
+# 3. Backup important data
+echo "Backing up data..."
+./backup_saves.sh
+
+# 4. Check storage
+echo "Storage status:"
+adb shell df -h | grep /sdcard
+
+# 5. Battery health
+echo "Battery info:"
+adb shell dumpsys battery | grep -E "level|health|status"
+
+echo "Maintenance complete!"
+#+END_SRC
+
+*** App Update Batch Install
+#+BEGIN_SRC bash
+#!/bin/bash
+# Install multiple app updates
+
+UPDATE_DIR="./apk_updates"
+
+echo "Installing updates from $UPDATE_DIR..."
+
+for apk in "$UPDATE_DIR"/*.apk; do
+    echo "Installing $(basename "$apk")..."
+    adb install -r "$apk"
+    
+    if [ $? -eq 0 ]; then
+        echo "✓ Success"
+        # Move to installed folder
+        mv "$apk" "$UPDATE_DIR/installed/"
+    else
+        echo "✗ Failed"
+    fi
+done
+
+echo "Update installation complete!"
+#+END_SRC
+
+** Backup Strategy Best Practices
+
+*** 3-2-1 Backup Rule for Games
+#+BEGIN_EXAMPLE
+# 3 copies of data
+# 2 different storage types
+# 1 offsite backup
+
+# Daily: Local backup to computer
+./backup_saves.sh
+
+# Weekly: Sync to external drive
+rsync -av ~/android_backups/ /mnt/external_drive/android_backups/
+
+# Monthly: Upload to cloud
+rclone sync ~/android_backups/ gdrive:AndroidBackups/
+#+END_EXAMPLE
+
+*** Version-Controlled Saves
+#+BEGIN_SRC bash
+#!/bin/bash
+# Git-based save versioning
+
+SAVE_DIR="$HOME/game_saves"
+PACKAGE="com.aspyr.swkotor"
+
+cd "$SAVE_DIR" || exit 1
+
+# Pull latest saves
+adb pull /sdcard/Android/data/$PACKAGE/files/saves/ ./kotor/
+
+# Commit changes
+git add kotor/
+git commit -m "Backup: $(date +%Y-%m-%d_%H:%M:%S)"
+git push origin main
+
+echo "Saves backed up and versioned!"
+#+END_SRC
+
+* Quick Reference Tables                                           :reference:
+
+** Essential Commands Summary
+| Category      | Command                   | Action                    |
+|---------------+---------------------------+---------------------------|
+| *Connection*  | =adb devices=             | List devices              |
+|               | =adb connect IP:PORT=     | Connect wireless          |
+|               | =adb disconnect=          | Disconnect wireless       |
+| *Files*       | =adb pull SOURCE .=       | Copy from device          |
+|               | =adb push FILE /sdcard/=  | Copy to device            |
+| *Apps*        | =adb install app.apk=     | Install app               |
+|               | =adb uninstall PACKAGE=   | Remove app                |
+| *Shell*       | =adb shell=               | Enter shell               |
+|               | =adb shell COMMAND=       | Run command               |
+| *Backup*      | =adb backup -f file.ab PACKAGE= | Backup app          |
+|               | =adb restore file.ab=     | Restore backup            |
+| *Screen*      | =adb shell screencap /sdcard/s.png= | Screenshot      |
+|               | =adb shell screenrecord /sdcard/v.mp4= | Record        |
+| *Debug*       | =adb logcat=              | View logs                 |
+| *System*      | =adb reboot=              | Reboot device             |
+
+** File Path Quick Reference
+| Location                          | Description               | Root Needed?              |
+|-----------------------------------+---------------------------+---------------------------|
+| =/sdcard/=                        | Main storage              | No                        |
+| =/sdcard/Download/=               | Downloads                 | No                        |
+| =/sdcard/DCIM/Camera/=            | Photos                    | No                        |
+| =/sdcard/Pictures/=               | Pictures                  | No                        |
+| =/sdcard/Music/=                  | Music                     | No                        |
+| =/sdcard/Android/data/PACKAGE/=   | App external data         | No (Android 10-)          |
+| =/sdcard/Android/obb/PACKAGE/=    | Large game files          | No                        |
+| =/data/data/PACKAGE/=             | App internal data         | Yes or backup             |
+| =/data/app/=                      | Installed APKs            | Yes or pm path            |
+| =/system/=                        | System partition          | Yes                       |
+
+** Package Management Commands
+| Command                           | Description               |
+|-----------------------------------|---------------------------|
+| =pm list packages=                | List all packages         |
+| =pm list packages -3=             | User apps only            |
+| =pm list packages -s=             | System apps only          |
+| =pm list packages | grep KEYWORD= | Search packages           |
+| =pm path PACKAGE=                 | Find APK location         |
+| =pm clear PACKAGE=                | Clear app data            |
+| =pm disable-user PACKAGE=         | Disable app               |
+| =pm enable PACKAGE=               | Enable app                |
+| =pm grant PACKAGE PERMISSION=     | Grant permission          |
+| =pm revoke PACKAGE PERMISSION=    | Revoke permission         |
+
+** Input Key Event Codes
+| Code | Key               | Code | Key               |
+|------|-------------------|------|-------------------|
+| 3    | HOME              | 82   | MENU              |
+| 4    | BACK              | 84   | SEARCH            |
+| 24   | VOLUME_UP         | 85   | PLAY_PAUSE        |
+| 25   | VOLUME_DOWN       | 86   | STOP              |
+| 26   | POWER             | 87   | NEXT              |
+| 27   | CAMERA            | 88   | PREVIOUS          |
+| 61   | TAB               | 111  | ESCAPE            |
+| 62   | SPACE             | 122  | MOVE_HOME         |
+| 66   | ENTER             | 123  | MOVE_END          |
+| 67   | DEL               | 164  | MUTE              |
+
+** Backup Command Options
+| Option      | Description               | Example                   |
+|-------------|---------------------------|---------------------------|
+| =-f=        | Output filename           | =-f backup.ab=            |
+| =-all=      | Backup all apps           | =-all=                    |
+| =-apk=      | Include APK files         | =-apk=                    |
+| =-noapk=    | Data only                 | =-noapk=                  |
+| =-shared=   | Include SD card           | =-shared=                 |
+| =-system=   | Include system apps       | =-system=                 |
+| =-nosystem= | User apps only            | =-nosystem=               |
+
+** Common Error Solutions
+| Error                             | Solution                  |
+|-----------------------------------|---------------------------|
+| =device not found=                | =adb kill-server && adb start-server= |
+| =device unauthorized=             | Allow on phone, or revoke and retry |
+| =no devices/emulators found=      | Check USB, try =adb devices= |
+| =protocol failure=                | Try different USB port/cable |
+| =insufficient storage=            | Clear space: =pm trim-caches 500M= |
+| =failed to copy=                  | Check file path and permissions |
+| =installation failed=             | Uninstall first, then install |
+
+* Tips & Best Practices                                               :tips:
+
+** Security Considerations
+
+*** Keep ADB Secure
+- *Disable USB debugging* when not needed
+- *Never leave wireless ADB* enabled permanently
+- *Use strong WiFi passwords* - wireless ADB depends on network security
+- *Revoke authorizations* regularly in Developer Options
+- *Don't use ADB* on public/untrusted computers
+- *Be cautious with scripts* from unknown sources
+
+### Safe Backup Practices
+- *Test restores* periodically to ensure backups work
+- *Keep multiple backup copies* (3-2-1 rule)
+- *Verify file integrity* after transfers
+- *Document your backup locations* and methods
+- *Encrypt sensitive backups* if stored in cloud
+- *Date your backups* clearly in filenames
+
+## Workflow Efficiency
+
+### Command Aliases (Add to ~/.bashrc or ~/.zshrc)
+#+BEGIN_SRC bash
+# ADB shortcuts
+alias adbi='adb install -r'
+alias adbu='adb uninstall'
+alias adbs='adb shell'
+alias adbr='adb reboot'
+alias adbp='adb pull'
+alias adbpush='adb push'
+alias adbdevices='adb devices'
+alias adblog='adb logcat'
+alias adbclear='adb logcat -c'
+
+# Common operations
+alias adb-screenshot='adb shell screencap /sdcard/screenshot.png && adb pull /sdcard/screenshot.png'
+alias adb-screen='adb shell screenrecord /sdcard/screen.mp4'
+
+# Device info
+alias adb-info='adb shell getprop | grep -E "model|version|manufacturer"'
+alias adb-battery='adb shell dumpsys battery'
+alias adb-storage='adb shell df -h'
+
+# Package management
+alias adb-packages='adb shell pm list packages'
+alias adb-user-packages='adb shell pm list packages -3'
+#+END_SRC
+
+### PowerShell Aliases (Windows)
+#+BEGIN_SRC powershell
+# Add to $PROFILE
+
+function adb-install { adb install -r $args }
+function adb-uninstall { adb uninstall $args }
+function adb-shell { adb shell $args }
+function adb-screenshot {
+    adb shell screencap /sdcard/screenshot.png
+    adb pull /sdcard/screenshot.png
+}
+
+Set-Alias adbi adb-install
+Set-Alias adbu adb-uninstall
+Set-Alias adbs adb-shell
+#+END_SRC
+
+** Troubleshooting Mindset
+
+*** When Commands Fail
+1. *Check connection* - =adb devices= should show your device
+2. *Check paths* - Use =adb shell ls= to verify paths exist
+3. *Check permissions* - Some paths require root or backups
+4. *Check spelling* - Package names are case-sensitive
+5. *Read error messages* - They usually tell you what's wrong
+6. *Try USB vs wireless* - One might work better
+7. *Restart ADB server* - =adb kill-server= then =adb start-server=
+8. *Restart phone* - Sometimes the simplest solution works
+
+*** Common Mistakes to Avoid
+- Forgetting =/sdcard/= in paths
+- Using =\= instead of =/= in paths (even on Windows!)
+- Not accepting USB debugging prompt on phone
+- Using pairing port instead of connection port for wireless
+- Forgetting to enable Developer Options first
+- Not checking if device is connected before running commands
+- Using wrong package name (check with =pm list packages=)
+
+* Conclusion                                                    :conclusion:
+
+Remember: Use =adb help= for quick reference, =adb shell= to explore your device, and always test backups before you need them!
+
+** Final Emergency Reference
+| Problem               | Solution              | When to Use               |
+|-----------------------+-----------------------|---------------------------|
+| Can't connect         | =adb kill-server=     | Connection issues         |
+| Device unauthorized   | Check phone screen    | First time connecting     |
+| Wrong directory       | =adb shell pwd=       | Lost in file system       |
+| Need package name     | =pm list packages | grep APP= | Finding apps      |
+| Failed backup         | =adb backup=          | When pull doesn't work    |
+| Wireless won't connect | Use USB instead      | Network issues            |
+| Everything broken     | =adb reboot=          | When all else fails       |
