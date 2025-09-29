@@ -1,0 +1,1779 @@
+#+TITLE: Complete Termux Guide
+#+AUTHOR: Claude
+#+DATE: [2025-09-29 Mon]
+#+STARTUP: overview
+#+TODO: TODO NEXT WAITING | DONE CANCELLED
+#+TAGS: essential(e) daily(d) weekly(w) advanced(a)
+
+* What is Termux?                                                  :essential:
+
+Termux is a powerful terminal emulator and Linux environment for Android that requires no root:
+
+- *Linux Terminal* - Full bash/zsh shell on your Android device
+- *Package Manager* - Install thousands of Linux packages (apt/pkg)
+- *Development Environment* - Code Python, Node.js, Ruby, Go, etc. on your phone
+- *SSH Client/Server* - Remote access to/from your device
+- *Automation* - Run scripts and cron jobs on your phone
+- *No Root Required* - Works on unrooted devices
+
+*Philosophy*: A complete Linux environment in your pocket, without rooting your device.
+
+** What Termux IS
+- Terminal emulator running on your Android device
+- Linux package ecosystem (Debian-based)
+- Development and automation platform
+- SSH/SFTP server you can run on your phone
+- Scripting environment for phone automation
+
+** What Termux is NOT
+- Not a way to control other apps directly
+- Not a replacement for root access
+- Not ADB (that's computer → phone; this is phone-native)
+- Not able to access other apps' private data
+- Not a way to read Telegram/WhatsApp messages without their APIs
+
+** Common Use Cases
+- Programming on the go
+- Git version control
+- SSH into servers from phone
+- Run web servers on your device
+- Automate tasks with cron
+- Use command-line tools (grep, sed, awk, etc.)
+- Python/Node.js scripting
+- File management and organization
+
+* Essential (Can't Work Without)                                   :essential:
+
+** Installation & Setup
+
+*** Install Termux
+#+BEGIN_EXAMPLE
+Method 1: F-Droid (RECOMMENDED)
+1. Install F-Droid: https://f-droid.org
+2. Search for "Termux" in F-Droid
+3. Install Termux
+4. Install Termux:API (for Android features)
+5. Install Termux:Widget (optional, for home screen shortcuts)
+
+Method 2: GitHub Releases
+1. Go to: https://github.com/termux/termux-app/releases
+2. Download latest APK
+3. Install APK
+
+WARNING: Don't use Google Play Store version - it's outdated!
+#+END_EXAMPLE
+
+*** First Launch Setup
+#+BEGIN_EXAMPLE
+# Update package lists (ALWAYS DO THIS FIRST)
+pkg update
+
+# Upgrade installed packages
+pkg upgrade
+
+# Install essential tools
+pkg install termux-tools
+#+END_EXAMPLE
+
+*** Grant Storage Access (CRITICAL!)
+#+BEGIN_EXAMPLE
+# This allows Termux to access /sdcard/
+termux-setup-storage
+
+# Accept permission prompt on phone
+# Creates ~/storage/ with shortcuts to common folders
+#+END_EXAMPLE
+
+** Essential Commands & Shortcuts
+
+*** Termux-Specific Keys
+| Key Combination       | Action                    | Notes                     |
+|-----------------------+---------------------------+---------------------------|
+| =Volume Down + Q=     | Show extra keys           | Virtual key row           |
+| =Volume Down + K=     | Toggle keyboard           | Show/hide keyboard        |
+| =Volume Down + V=     | Paste                     | From clipboard            |
+| =Volume Down + C=     | SIGINT (Ctrl-C)           | Stop running process      |
+| =Volume Down + L=     | Clear screen              | Like clear command        |
+| =Volume Down + W=     | Up arrow                  | Previous command          |
+| =Volume Down + S=     | Down arrow                | Next command              |
+| =Volume Down + A=     | Left arrow                | Move cursor left          |
+| =Volume Down + D=     | Right arrow               | Move cursor right         |
+| =Volume Down + E=     | ESC key                   | Escape                    |
+
+*** Extra Keys Row
+| Key   | Function                  | Notes                     |
+|-------|---------------------------|---------------------------|
+| =ESC= | Escape                    | Exit insert mode          |
+| =TAB= | Tab completion            | Autocomplete commands     |
+| =CTRL= | Control modifier         | Combine with other keys   |
+| =ALT= | Alt modifier              | Alternative modifier      |
+| =-=   | Dash/minus                | Common in commands        |
+| =/=   | Forward slash             | Paths and commands        |
+| =↑↓←→= | Arrow keys               | Navigation                |
+
+** Basic Survival Commands
+
+*** Navigation
+| Command           | Action                    | Notes                     |
+|-------------------|---------------------------|---------------------------|
+| =pwd=             | Print working directory   | Where am I?               |
+| =ls=              | List files                | See directory contents    |
+| =ls -la=          | List all files detailed   | Including hidden files    |
+| =cd DIRECTORY=    | Change directory          | Navigate folders          |
+| =cd ~=            | Go to home                | Termux home directory     |
+| =cd ../=          | Go up one level           | Parent directory          |
+| =cd storage/=     | Access Android storage    | /sdcard/ files            |
+
+*** File Operations
+| Command           | Action                    | Notes                     |
+|-------------------|---------------------------|---------------------------|
+| =cat file.txt=    | Display file contents     | View text files           |
+| =less file.txt=   | View file with scrolling  | Better for long files     |
+| =nano file.txt=   | Edit file                 | Simple text editor        |
+| =vim file.txt=    | Edit file (advanced)      | Vi editor                 |
+| =cp src dst=      | Copy file                 | Duplicate file            |
+| =mv old new=      | Move/rename file          | Change location/name      |
+| =rm file=         | Remove file               | Delete file               |
+| =mkdir dir=       | Create directory          | Make new folder           |
+| =rmdir dir=       | Remove empty directory    | Delete folder             |
+
+*** Emergency Commands
+| Command           | Action                    | Notes                     |
+|-------------------|---------------------------|---------------------------|
+| =Ctrl-C=          | Stop running process      | Kill current command      |
+| =Ctrl-D=          | Exit shell                | Close Termux session      |
+| =exit=            | Exit shell                | Close session             |
+| =clear=           | Clear screen              | Clean terminal display    |
+| =history=         | Show command history      | See previous commands     |
+
+** Package Management (pkg/apt)
+
+*** Essential Package Commands
+| Command                   | Action                    | Notes                     |
+|---------------------------|---------------------------|---------------------------|
+| =pkg update=              | Update package lists      | Do this first always      |
+| =pkg upgrade=             | Upgrade all packages      | Update installed software |
+| =pkg install PACKAGE=     | Install package           | Add new software          |
+| =pkg uninstall PACKAGE=   | Remove package            | Delete software           |
+| =pkg search KEYWORD=      | Search for packages       | Find available software   |
+| =pkg list-installed=      | List installed packages   | What do I have?           |
+| =pkg show PACKAGE=        | Package information       | Details about package     |
+| =pkg files PACKAGE=       | List package files        | What does package contain? |
+
+*** Must-Have Packages
+#+BEGIN_EXAMPLE
+# Text editors
+pkg install nano vim
+
+# Version control
+pkg install git
+
+# File management
+pkg install tree file
+
+# Network tools
+pkg install openssh curl wget
+
+# Programming languages
+pkg install python nodejs ruby
+
+# System tools
+pkg install htop tmux
+
+# Compression
+pkg install tar gzip zip unzip
+#+END_EXAMPLE
+
+* Common (Daily Tasks)                                                :daily:
+
+** File Management & Navigation
+
+*** Working with Android Storage
+#+BEGIN_EXAMPLE
+# After running: termux-setup-storage
+
+# Your home directory
+cd ~                  # Usually /data/data/com.termux/files/home
+
+# Access Android storage
+cd ~/storage/
+
+# Common Android locations
+cd ~/storage/shared              # /sdcard/
+cd ~/storage/downloads           # /sdcard/Download/
+cd ~/storage/dcim                # /sdcard/DCIM/
+cd ~/storage/pictures            # /sdcard/Pictures/
+cd ~/storage/music               # /sdcard/Music/
+#+END_EXAMPLE
+
+*** Storage Locations Explained
+| Termux Path           | Android Path              | Description               |
+|-----------------------|---------------------------|---------------------------|
+| =~=                   | =/data/data/com.termux/files/home= | Termux home      |
+| =~/storage/shared=    | =/sdcard/=                | Main storage              |
+| =~/storage/downloads= | =/sdcard/Download/=       | Downloads folder          |
+| =~/storage/dcim=      | =/sdcard/DCIM/=           | Camera photos             |
+| =~/storage/external-1= | External SD card         | If available              |
+| =$PREFIX=             | =/data/data/com.termux/files/usr= | Termux system    |
+
+*** Common File Operations
+#+BEGIN_EXAMPLE
+# Copy from Android storage to Termux
+cp ~/storage/downloads/file.txt ~/
+
+# Copy from Termux to Android storage
+cp ~/script.sh ~/storage/shared/
+
+# Find files
+find ~/storage/shared -name "*.jpg"
+
+# Count files in directory
+ls -1 ~/storage/dcim/Camera | wc -l
+
+# Get file size
+du -h file.txt
+du -sh directory/
+
+# Check disk usage
+df -h
+#+END_EXAMPLE
+
+** Text Editing
+
+*** Nano (Beginner-Friendly)
+| Command       | Action                    | Notes                     |
+|---------------|---------------------------|---------------------------|
+| =nano FILE=   | Open file                 | Create if doesn't exist   |
+| =Ctrl-O=      | Save file                 | Write out                 |
+| =Ctrl-X=      | Exit                      | Close editor              |
+| =Ctrl-K=      | Cut line                  | Remove line               |
+| =Ctrl-U=      | Paste line                | Insert cut text           |
+| =Ctrl-W=      | Search                    | Find text                 |
+| =Ctrl-G=      | Help                      | Show all commands         |
+
+*** Vim Basics (More Powerful)
+| Command       | Action                    | Notes                     |
+|---------------|---------------------------|---------------------------|
+| =vim FILE=    | Open file                 | Start in normal mode      |
+| =i=           | Insert mode               | Start typing              |
+| =ESC=         | Normal mode               | Exit insert mode          |
+| =:w=          | Save                      | Write file                |
+| =:q=          | Quit                      | Exit vim                  |
+| =:wq=         | Save and quit             | Write and exit            |
+| =:q!=         | Quit without saving       | Discard changes           |
+| =dd=          | Delete line               | Cut line (normal mode)    |
+| =yy=          | Copy line                 | Yank line (normal mode)   |
+| =p=           | Paste                     | Put text (normal mode)    |
+
+** Git Version Control
+
+*** Git Setup
+#+BEGIN_EXAMPLE
+# Install git
+pkg install git
+
+# Configure git
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+
+# Set default editor
+git config --global core.editor nano
+#+END_EXAMPLE
+
+*** Common Git Operations
+| Command                   | Action                    | Notes                     |
+|---------------------------|---------------------------|---------------------------|
+| =git clone URL=           | Clone repository          | Download repo             |
+| =git status=              | Check status              | See changes               |
+| =git add .=               | Stage all changes         | Prepare for commit        |
+| =git add FILE=            | Stage specific file       | Prepare file              |
+| =git commit -m "message"= | Commit changes            | Save changes              |
+| =git push=                | Push to remote            | Upload changes            |
+| =git pull=                | Pull from remote          | Download changes          |
+| =git log=                 | View commit history       | See past commits          |
+| =git diff=                | Show changes              | See what changed          |
+
+*** SSH Keys for Git
+#+BEGIN_EXAMPLE
+# Generate SSH key
+pkg install openssh
+ssh-keygen -t ed25519 -C "your.email@example.com"
+
+# View public key (add to GitHub/GitLab)
+cat ~/.ssh/id_ed25519.pub
+
+# Start SSH agent
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+# Test GitHub connection
+ssh -T git@github.com
+#+END_EXAMPLE
+
+** SSH Operations
+
+*** SSH Client (Connect to Other Devices)
+#+BEGIN_EXAMPLE
+# Install OpenSSH
+pkg install openssh
+
+# Connect to server
+ssh user@hostname
+
+# Connect with specific port
+ssh -p 2222 user@hostname
+
+# Copy files with SCP
+scp file.txt user@hostname:/path/
+scp user@hostname:/path/file.txt ./
+
+# Copy files with SFTP
+sftp user@hostname
+# In SFTP: put file.txt, get file.txt, ls, cd, etc.
+#+END_EXAMPLE
+
+### SSH Server (Let Others Connect to Your Phone)
+#+BEGIN_EXAMPLE
+# Install OpenSSH
+pkg install openssh
+
+# Set password for your Termux user
+passwd
+
+# Start SSH server
+sshd
+
+# Check it's running
+pkill sshd && echo "Not running" || echo "Running on port 8022"
+
+# Find your IP address
+ip addr show wlan0 | grep inet
+
+# Connect from computer
+ssh -p 8022 USERNAME@PHONE_IP
+# USERNAME is usually 'u0_a' followed by numbers
+# Check with: whoami
+
+# Stop SSH server
+pkill sshd
+#+END_EXAMPLE
+
+*** SSH Configuration
+#+BEGIN_EXAMPLE
+# Create config file
+nano ~/.ssh/config
+
+# Example config:
+Host myserver
+    HostName 192.168.1.100
+    User username
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+
+# Now you can just:
+ssh myserver
+#+END_EXAMPLE
+
+** Running Scripts
+
+*** Python Scripts
+#+BEGIN_EXAMPLE
+# Install Python
+pkg install python
+
+# Run script
+python script.py
+
+# Install pip packages
+pip install requests beautifulsoup4 pandas
+
+# Create virtual environment
+pip install virtualenv
+virtualenv myenv
+source myenv/bin/activate
+#+END_EXAMPLE
+
+*** Bash Scripts
+#+BEGIN_EXAMPLE
+# Create script
+nano backup.sh
+
+# Add shebang at top:
+#!/data/data/com.termux/files/usr/bin/bash
+
+# Make executable
+chmod +x backup.sh
+
+# Run script
+./backup.sh
+#+END_EXAMPLE
+
+*** Node.js Scripts
+#+BEGIN_EXAMPLE
+# Install Node.js
+pkg install nodejs
+
+# Run script
+node script.js
+
+# Install packages
+npm install express axios
+#+END_EXAMPLE
+
+* Helpful (Weekly Tasks)                                             :weekly:
+
+** Termux:API - Android Integration
+
+*** Installing Termux:API
+#+BEGIN_EXAMPLE
+# 1. Install Termux:API app from F-Droid
+#    (This is a separate app!)
+
+# 2. Install API package in Termux
+pkg install termux-api
+
+# 3. Test if working
+termux-battery-status
+#+END_EXAMPLE
+
+*** Available API Commands
+| Command                   | Function                  | Requires Permission       |
+|---------------------------|---------------------------|---------------------------|
+| =termux-battery-status=   | Battery information       | No                        |
+| =termux-camera-photo=     | Take photo                | Camera                    |
+| =termux-camera-info=      | Camera details            | Camera                    |
+| =termux-clipboard-get=    | Get clipboard content     | No                        |
+| =termux-clipboard-set=    | Set clipboard content     | No                        |
+| =termux-contact-list=     | List contacts             | Contacts                  |
+| =termux-dialog=           | Show dialog               | No                        |
+| =termux-download=         | Download file             | Storage                   |
+| =termux-location=         | Get GPS location          | Location                  |
+| =termux-notification=     | Show notification         | No                        |
+| =termux-sensor=           | Read sensors              | No                        |
+| =termux-share=            | Share content             | No                        |
+| =termux-sms-list=         | List SMS messages         | SMS                       |
+| =termux-sms-send=         | Send SMS                  | SMS                       |
+| =termux-telephony-call=   | Make phone call           | Phone                     |
+| =termux-telephony-cellinfo= | Cell tower info         | Phone                     |
+| =termux-toast=            | Show toast message        | No                        |
+| =termux-torch=            | Toggle flashlight         | No                        |
+| =termux-vibrate=          | Vibrate phone             | No                        |
+| =termux-volume=           | Control volume            | No                        |
+| =termux-wifi-connectioninfo= | WiFi information       | Location                  |
+| =termux-wifi-scaninfo=    | WiFi scan results         | Location                  |
+
+*** API Examples
+
+**** Battery Monitoring
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+# Check battery and notify if low
+
+BATTERY=$(termux-battery-status | grep percentage | awk '{print $2}' | tr -d ',')
+
+if [ $BATTERY -lt 20 ]; then
+    termux-notification --title "Low Battery" --content "Battery at ${BATTERY}%"
+fi
+#+END_SRC
+
+**** Taking Photos
+#+BEGIN_EXAMPLE
+# Take photo with back camera
+termux-camera-photo -c 0 photo.jpg
+
+# Take photo with front camera
+termux-camera-photo -c 1 selfie.jpg
+
+# List available cameras
+termux-camera-info
+#+END_EXAMPLE
+
+**** GPS Location
+#+BEGIN_EXAMPLE
+# Get current location
+termux-location
+
+# Output example:
+# {
+#   "latitude": 37.4219999,
+#   "longitude": -122.0840575,
+#   "altitude": 35.0,
+#   "accuracy": 20.0
+# }
+
+# Log location to file
+termux-location > location.json
+#+END_EXAMPLE
+
+**** Send SMS (Requires Permission)
+#+BEGIN_EXAMPLE
+# Send text message
+termux-sms-send -n "1234567890" "Hello from Termux!"
+
+# List SMS inbox
+termux-sms-list -t inbox -l 10
+#+END_EXAMPLE
+
+**** Make Phone Call (Requires Permission)
+#+BEGIN_EXAMPLE
+# Initiate phone call
+termux-telephony-call "1234567890"
+
+# Note: This just starts the call, doesn't dial automatically
+#+END_EXAMPLE
+
+**** Show Notifications
+#+BEGIN_EXAMPLE
+# Simple notification
+termux-notification --title "Task Complete" --content "Backup finished"
+
+# Notification with actions
+termux-notification \
+  --title "Download Complete" \
+  --content "file.zip ready" \
+  --action "termux-share file.zip" \
+  --button1 "Share" \
+  --button1-action "termux-share file.zip"
+#+END_EXAMPLE
+
+**** Clipboard Operations
+#+BEGIN_EXAMPLE
+# Copy to clipboard
+echo "Hello World" | termux-clipboard-set
+
+# Get from clipboard
+termux-clipboard-get
+
+# Useful in scripts
+URL=$(termux-clipboard-get)
+curl "$URL" > download.html
+#+END_EXAMPLE
+
+** Automation with Cron
+
+*** Setting Up Cron
+#+BEGIN_EXAMPLE
+# Install cronie
+pkg install cronie
+
+# Start cron daemon
+crond
+
+# Edit crontab
+crontab -e
+
+# View current crontab
+crontab -l
+
+# Remove crontab
+crontab -r
+#+END_EXAMPLE
+
+*** Cron Syntax
+#+BEGIN_EXAMPLE
+# Minute Hour Day Month Weekday Command
+#   0-59  0-23 1-31 1-12  0-6
+
+# Examples:
+# Run every minute
+* * * * * /path/to/script.sh
+
+# Run at 3:30 AM daily
+30 3 * * * /path/to/backup.sh
+
+# Run every hour
+0 * * * * /path/to/check.sh
+
+# Run at noon on weekdays
+0 12 * * 1-5 /path/to/work.sh
+
+# Run every 15 minutes
+*/15 * * * * /path/to/frequent.sh
+#+END_EXAMPLE
+
+*** Cron Examples
+
+**** Daily Backup
+#+BEGIN_EXAMPLE
+# Add to crontab: crontab -e
+0 2 * * * /data/data/com.termux/files/home/backup.sh
+
+# Create backup.sh:
+#!/data/data/com.termux/files/usr/bin/bash
+tar -czf ~/storage/shared/backup_$(date +\%Y\%m\%d).tar.gz ~/important/
+#+END_EXAMPLE
+
+**** Battery Monitor
+#+BEGIN_EXAMPLE
+# Check battery every 30 minutes
+*/30 * * * * /data/data/com.termux/files/home/battery_check.sh
+
+# battery_check.sh:
+#!/data/data/com.termux/files/usr/bin/bash
+BATTERY=$(termux-battery-status | grep percentage | awk '{print $2}' | tr -d ',')
+if [ $BATTERY -lt 15 ]; then
+    termux-notification --title "Critical Battery" --content "${BATTERY}% remaining"
+fi
+#+END_EXAMPLE
+
+** Web Servers & Services
+
+*** Python HTTP Server
+#+BEGIN_EXAMPLE
+# Simple file server
+python -m http.server 8080
+
+# Access from browser:
+# http://localhost:8080
+
+# Access from computer on same network:
+# http://PHONE_IP:8080
+#+END_EXAMPLE
+
+*** Node.js Server
+#+BEGIN_EXAMPLE
+# Install Express
+npm install express
+
+# Create simple server (server.js):
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Hello from Termux!');
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+
+# Run server
+node server.js
+#+END_EXAMPLE
+
+*** PHP Server
+#+BEGIN_EXAMPLE
+# Install PHP
+pkg install php
+
+# Run PHP server
+php -S localhost:8080
+
+# Or specify directory
+php -S localhost:8080 -t ~/public_html/
+#+END_EXAMPLE
+
+** File Synchronization
+
+*** Rsync for Backups
+#+BEGIN_EXAMPLE
+# Install rsync
+pkg install rsync
+
+# Sync directory to another location
+rsync -av ~/documents/ ~/storage/shared/backup/
+
+# Sync over SSH
+rsync -av ~/documents/ user@server:/backup/
+
+# Sync with progress
+rsync -av --progress ~/large_folder/ ~/storage/shared/backup/
+
+# Dry run (see what would be copied)
+rsync -avn ~/source/ ~/destination/
+#+END_EXAMPLE
+
+*** Rclone for Cloud Storage
+#+BEGIN_EXAMPLE
+# Install rclone
+pkg install rclone
+
+# Configure cloud storage
+rclone config
+
+# Sync to Google Drive
+rclone sync ~/documents/ gdrive:backup/
+
+# Copy files
+rclone copy ~/file.txt gdrive:folder/
+
+# List remote files
+rclone ls gdrive:
+
+# Mount cloud storage (requires termux-fuse)
+rclone mount gdrive: ~/cloud/
+#+END_EXAMPLE
+
+** Development Tools
+
+*** Using tmux (Terminal Multiplexer)
+#+BEGIN_EXAMPLE
+# Install tmux
+pkg install tmux
+
+# Start tmux
+tmux
+
+# Tmux commands (prefix: Ctrl-b)
+# Ctrl-b c        - Create new window
+# Ctrl-b n        - Next window
+# Ctrl-b p        - Previous window
+# Ctrl-b %        - Split vertically
+# Ctrl-b "        - Split horizontally
+# Ctrl-b arrow    - Navigate panes
+# Ctrl-b d        - Detach session
+# Ctrl-b [        - Scroll mode (q to exit)
+
+# List sessions
+tmux ls
+
+# Attach to session
+tmux attach
+
+# Kill session
+tmux kill-session
+#+END_EXAMPLE
+
+*** Database Management
+#+BEGIN_EXAMPLE
+# SQLite
+pkg install sqlite
+sqlite3 database.db
+
+# PostgreSQL
+pkg install postgresql
+initdb mydb
+pg_ctl -D mydb start
+createdb testdb
+psql testdb
+
+# MariaDB/MySQL
+pkg install mariadb
+mysql_install_db
+mysqld_safe &
+mysql -u root
+#+END_EXAMPLE
+
+* Advanced (Setup/Troubleshooting)                                :advanced:
+
+** Advanced Configuration
+
+*** Custom Shell Configuration
+#+BEGIN_EXAMPLE
+# Bash configuration
+nano ~/.bashrc
+
+# Add aliases
+alias ll='ls -lah'
+alias update='pkg update && pkg upgrade'
+alias storage='cd ~/storage/shared'
+
+# Add to PATH
+export PATH=$PATH:~/bin
+
+# Custom prompt
+export PS1='\[\e[32m\]\u@termux\[\e[0m\]:\[\e[34m\]\w\[\e[0m\]\$ '
+
+# Apply changes
+source ~/.bashrc
+#+END_EXAMPLE
+
+*** Zsh Setup (Better Shell)
+#+BEGIN_EXAMPLE
+# Install zsh
+pkg install zsh
+
+# Set as default shell
+chsh -s zsh
+
+# Install Oh My Zsh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# Configure ~/.zshrc
+nano ~/.zshrc
+
+# Popular plugins:
+plugins=(git command-not-found sudo)
+#+END_EXAMPLE
+
+### Boot Scripts
+#+BEGIN_EXAMPLE
+# Create boot script directory
+mkdir -p ~/.termux/boot/
+
+# Scripts in this directory run when Termux starts
+# Example: Start SSH server on boot
+nano ~/.termux/boot/start-sshd.sh
+
+#!/data/data/com.termux/files/usr/bin/bash
+sshd
+
+# Make executable
+chmod +x ~/.termux/boot/start-sshd.sh
+
+# Requires Termux:Boot app from F-Droid!
+#+END_EXAMPLE
+
+** Advanced Package Management
+
+*** Package Sources
+#+BEGIN_EXAMPLE
+# View current sources
+cat $PREFIX/etc/apt/sources.list
+
+# Add unstable repository (advanced users)
+echo "deb https://grimler.se/termux-packages-24 unstable main" >> $PREFIX/etc/apt/sources.list.d/unstable.list
+pkg update
+
+# Add root repository (requires root)
+pkg install root-repo
+#+END_EXAMPLE
+
+*** Building from Source
+#+BEGIN_EXAMPLE
+# Install build essentials
+pkg install build-essential cmake
+
+# Example: Build from source
+git clone https://github.com/example/project
+cd project
+mkdir build && cd build
+cmake ..
+make
+make install
+#+END_EXAMPLE
+
+** Advanced Scripting
+
+*** Argument Handling in Bash
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+
+# Script with arguments
+FILENAME=$1
+DESTINATION=$2
+
+if [ -z "$FILENAME" ]; then
+    echo "Usage: $0 <filename> [destination]"
+    exit 1
+fi
+
+if [ -z "$DESTINATION" ]; then
+    DESTINATION=~/storage/shared/
+fi
+
+cp "$FILENAME" "$DESTINATION"
+echo "Copied $FILENAME to $DESTINATION"
+#+END_SRC
+
+*** Error Handling
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+
+# Exit on error
+set -e
+
+# Function with error handling
+backup_file() {
+    local src=$1
+    local dst=$2
+    
+    if [ ! -f "$src" ]; then
+        echo "Error: Source file not found: $src" >&2
+        return 1
+    fi
+    
+    cp "$src" "$dst" || {
+        echo "Error: Failed to copy $src" >&2
+        return 1
+    }
+    
+    echo "Successfully backed up: $src"
+}
+
+# Use function
+backup_file "important.txt" "~/storage/shared/backup/" || exit 1
+#+END_SRC
+
+*** Logging
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+
+LOGFILE=~/script.log
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOGFILE"
+}
+
+log "Script started"
+# Do work
+log "Script completed"
+#+END_SRC
+
+** Working with Android Apps (Limitations)
+
+*** What You CAN'T Do
+#+BEGIN_EXAMPLE
+# ❌ Read Telegram messages directly
+# ❌ Control other apps' UI
+# ❌ Read WhatsApp/Signal messages
+# ❌ Access other apps' notifications
+# ❌ Simulate screen taps (without root)
+# ❌ Access /data/data/ of other apps
+
+# These require:
+# - Root access, OR
+# - The app's official API, OR
+# - Accessibility services (Tasker/MacroDroid)
+#+END_EXAMPLE
+
+*** What You CAN Do
+#+BEGIN_EXAMPLE
+# ✓ Open apps with intent
+am start -n com.package.name/.ActivityName
+
+# ✓ Open URLs (which might open apps)
+termux-open-url "https://example.com"
+termux-open-url "tel:1234567890"
+termux-open-url "sms:1234567890"
+
+# ✓ Share files to apps
+termux-share file.txt
+
+# ✓ Use official APIs if available
+# Example: Telegram Bot API
+curl -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" \
+  -d "chat_id=<CHAT_ID>" \
+  -d "text=Hello from Termux"
+#+END_EXAMPLE
+
+*** Opening Apps via Intent
+#+BEGIN_EXAMPLE
+# Open app
+am start -n com.android.chrome/com.google.android.apps.chrome.Main
+
+# Open URL in browser
+am start -a android.intent.action.VIEW -d "https://example.com"
+
+# Open dialer
+am start -a android.intent.action.DIAL -d tel:1234567890
+
+# Send SMS (opens app)
+am start -a android.intent.action.SENDTO -d sms:1234567890 --es sms_body "Hello"
+
+# Common package names
+# Chrome: com.android.chrome
+# Telegram: org.telegram.messenger
+# WhatsApp: com.whatsapp
+#+END_EXAMPLE
+
+** Telegram Bot Integration (Workaround for Messages)
+#+BEGIN_EXAMPLE
+# You can't read Telegram messages directly,
+# but you can create a bot and interact through it!
+
+# 1. Create bot via @BotFather on Telegram
+# 2. Get your bot token and chat ID
+# 3. Use API to send/receive messages
+
+# Send message
+send_telegram() {
+    local token="YOUR_BOT_TOKEN"
+    local chat_id="YOUR_CHAT_ID"
+    local message="$1"
+    
+    curl -s -X POST "https://api.telegram.org/bot${token}/sendMessage" \
+        -d "chat_id=${chat_id}" \
+        -d "text=${message}"
+}
+
+# Check for new messages
+get_telegram_updates() {
+    local token="YOUR_BOT_TOKEN"
+    curl -s "https://api.telegram.org/bot${token}/getUpdates"
+}
+
+# Example: Notification bot
+send_telegram "Backup completed at $(date)"
+#+END_EXAMPLE
+
+** Network Tools & Monitoring
+
+*** Network Diagnostics
+#+BEGIN_EXAMPLE
+# Install network tools
+pkg install net-tools dnsutils iproute2
+
+# Check IP address
+ip addr show
+
+# Check open ports
+netstat -tulpn
+
+# DNS lookup
+nslookup google.com
+dig google.com
+
+# Ping
+ping -c 4 google.com
+
+# Traceroute
+traceroute google.com
+
+# Check WiFi info
+termux-wifi-connectioninfo
+#+END_EXAMPLE
+
+*** Port Scanning & Testing
+#+BEGIN_EXAMPLE
+# Install nmap
+pkg install nmap
+
+# Scan ports
+nmap localhost
+
+# Scan network
+nmap 192.168.1.0/24
+
+# Check if port is open
+nc -zv localhost 8022
+#+END_EXAMPLE
+
+*** Download Tools
+#+BEGIN_EXAMPLE
+# wget
+wget https://example.com/file.zip
+
+# curl with progress
+curl -O https://example.com/file.zip
+
+# aria2 (faster, multi-connection)
+pkg install aria2
+aria2c -x 16 https://example.com/large-file.zip
+
+# youtube-dl
+pkg install ffmpeg
+pip install yt-dlp
+yt-dlp "https://youtube.com/watch?v=VIDEO_ID"
+#+END_EXAMPLE
+
+** Troubleshooting
+
+### Common Issues
+
+**** Package Installation Fails
+#+BEGIN_EXAMPLE
+# Update first
+pkg update
+
+# Clear cache
+pkg clean
+
+# Reinstall Termux:API if API commands fail
+pkg uninstall termux-api
+pkg install termux-api
+
+# Check for broken packages
+pkg upgrade
+#+END_EXAMPLE
+
+**** Storage Permission Issues
+#+BEGIN_EXAMPLE
+# Re-run setup
+termux-setup-storage
+
+# Check if storage is mounted
+ls ~/storage/
+
+# If still not working, reinstall Termux
+# (backup important files first!)
+#+END_EXAMPLE
+
+**** SSH Server Won't Start
+#+BEGIN_EXAMPLE
+# Check if already running
+pgrep sshd
+
+# Kill existing process
+pkill sshd
+
+# Start fresh
+sshd
+
+# Check port
+netstat -tulpn | grep 8022
+
+# Find username for connection
+whoami
+#+END_EXAMPLE
+
+**** Python Package Installation Fails
+#+BEGIN_EXAMPLE
+# Update pip
+pip install --upgrade pip
+
+# Install with --no-cache-dir
+pip install --no-cache-dir package_name
+
+# For packages with C extensions
+pkg install python-dev build-essential
+pip install package_name
+
+# Use wheels when available
+pip install --only-binary :all: package_name
+#+END_EXAMPLE
+
+**** Out of Space
+#+BEGIN_EXAMPLE
+# Check disk usage
+df -h
+
+# Find large files
+du -sh * | sort -h
+
+# Clean package cache
+pkg clean
+
+# Remove unused packages
+pkg autoremove
+
+# Clear Python cache
+pip cache purge
+
+# Clear npm cache
+npm cache clean --force
+#+END_EXAMPLE
+
+** Security Best Practices
+
+### Securing SSH Server
+#+BEGIN_EXAMPLE
+# Use key-based authentication
+ssh-keygen -t ed25519
+# Copy public key to ~/.ssh/authorized_keys
+
+# Configure SSH (edit ~/.ssh/sshd_config)
+PasswordAuthentication no
+PermitRootLogin no
+
+# Use strong password
+passwd
+# Enter long, complex password
+
+# Limit connections to local network only
+# Don't expose to internet without VPN
+#+END_EXAMPLE
+
+*** Safe Package Installation
+#+BEGIN_EXAMPLE
+# Only install from official repos
+pkg install package_name
+
+# Verify package before installing
+pkg show package_name
+
+# Don't run random scripts from internet
+# Always review scripts first
+curl -fsSL script_url | less
+# Then if safe:
+bash script_name
+#+END_EXAMPLE
+
+** Advanced Automation Examples
+
+### Complete Backup System
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+# comprehensive_backup.sh
+
+BACKUP_ROOT=~/storage/shared/backups
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="$BACKUP_ROOT/$DATE"
+LOG_FILE="$BACKUP_ROOT/backup.log"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
+
+log "=== Backup Started ==="
+
+# Backup Termux home
+log "Backing up Termux home..."
+tar -czf "$BACKUP_DIR/termux_home.tar.gz" \
+    --exclude='*.tmp' \
+    --exclude='.cache' \
+    ~/
+
+# Backup important documents
+log "Backing up documents..."
+rsync -av ~/storage/shared/Documents/ "$BACKUP_DIR/documents/"
+
+# Backup photos
+log "Backing up recent photos..."
+find ~/storage/dcim/Camera -name "*.jpg" -mtime -7 -exec cp {} "$BACKUP_DIR/photos/" \;
+
+# Get system info
+log "Collecting system information..."
+termux-battery-status > "$BACKUP_DIR/battery_status.json"
+df -h > "$BACKUP_DIR/disk_usage.txt"
+pkg list-installed > "$BACKUP_DIR/installed_packages.txt"
+
+# Cleanup old backups (keep last 7)
+log "Cleaning up old backups..."
+cd "$BACKUP_ROOT"
+ls -t | tail -n +8 | xargs rm -rf
+
+# Send notification
+TOTAL_SIZE=$(du -sh "$BACKUP_DIR" | cut -f1)
+termux-notification \
+    --title "Backup Complete" \
+    --content "Backup size: $TOTAL_SIZE"
+
+log "=== Backup Complete ==="
+log "Location: $BACKUP_DIR"
+#+END_SRC
+
+*** Auto-Sync to Cloud
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+# cloud_sync.sh
+
+SOURCE=~/storage/shared/Documents
+REMOTE="gdrive:backup/phone_documents"
+LOG=~/cloud_sync.log
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG"
+}
+
+# Check internet connection
+if ! ping -c 1 google.com &> /dev/null; then
+    log "No internet connection"
+    exit 1
+fi
+
+log "Starting sync to cloud..."
+
+# Sync with rclone
+rclone sync "$SOURCE" "$REMOTE" \
+    --progress \
+    --log-file="$LOG" \
+    --log-level INFO
+
+if [ $? -eq 0 ]; then
+    log "Sync completed successfully"
+    termux-notification --title "Cloud Sync" --content "Documents synced successfully"
+else
+    log "Sync failed"
+    termux-notification --title "Cloud Sync Failed" --content "Check log for details"
+fi
+#+END_SRC
+
+*** Battery Monitor with Actions
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+# battery_monitor.sh
+
+# Get battery info
+BATTERY_JSON=$(termux-battery-status)
+LEVEL=$(echo "$BATTERY_JSON" | grep percentage | awk '{print $2}' | tr -d ',')
+STATUS=$(echo "$BATTERY_JSON" | grep status | awk '{print $2}' | tr -d '",')
+TEMP=$(echo "$BATTERY_JSON" | grep temperature | awk '{print $2}' | tr -d ',')
+
+LOG=~/battery_monitor.log
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] Level: $LEVEL%, Status: $STATUS, Temp: $TEMP°C" >> "$LOG"
+
+# Low battery warning
+if [ $LEVEL -lt 20 ] && [ "$STATUS" != "CHARGING" ]; then
+    termux-notification \
+        --title "Low Battery" \
+        --content "Battery at ${LEVEL}%. Please charge your device." \
+        --vibrate "200,200,200"
+    termux-vibrate -d 500
+fi
+
+# Critical battery
+if [ $LEVEL -lt 10 ]; then
+    termux-notification \
+        --title "Critical Battery" \
+        --content "Battery at ${LEVEL}%! Device will shut down soon."
+    
+    # Save work
+    ~/backup_important.sh
+fi
+
+# High temperature warning
+if [ $TEMP -gt 40 ]; then
+    termux-notification \
+        --title "High Temperature" \
+        --content "Battery temperature: ${TEMP}°C"
+fi
+#+END_SRC
+
+*** Location Logger
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+# location_logger.sh
+
+LOG_FILE=~/storage/shared/location_log.txt
+
+# Get location
+LOCATION=$(termux-location -p network)
+
+if [ $? -eq 0 ]; then
+    LAT=$(echo "$LOCATION" | grep latitude | awk '{print $2}' | tr -d ',')
+    LON=$(echo "$LOCATION" | grep longitude | awk '{print $2}' | tr -d ',')
+    
+    echo "$(date +'%Y-%m-%d %H:%M:%S'),$LAT,$LON" >> "$LOG_FILE"
+    
+    # Send to server if needed
+    # curl -X POST "https://myserver.com/location" \
+    #   -d "lat=$LAT&lon=$LON&time=$(date +%s)"
+fi
+#+END_SRC
+
+* Practical Workflows & Use Cases                                    :workflow:
+
+** Development Workflow
+
+### Mobile Development Setup
+#+BEGIN_EXAMPLE
+# Setup workspace
+mkdir -p ~/projects
+cd ~/projects
+
+# Clone repository
+git clone https://github.com/user/project.git
+cd project
+
+# Python project
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Node.js project
+npm install
+
+# Work in tmux for multitasking
+tmux new -s dev
+# Ctrl-b % to split
+# One pane: editor, other pane: running code
+#+END_EXAMPLE
+
+### Git Workflow on Phone
+#+BEGIN_EXAMPLE
+# Morning: Pull latest changes
+cd ~/projects/myproject
+git pull
+
+# Make changes on phone
+nano file.py
+
+# Commit and push
+git add .
+git commit -m "Fix bug on mobile"
+git push
+
+# If merge conflicts
+git status
+nano conflicted_file.py  # Resolve conflicts
+git add conflicted_file.py
+git commit
+git push
+#+END_EXAMPLE
+
+## Automation Workflow
+
+### Daily Automated Tasks
+#+BEGIN_EXAMPLE
+# Setup cron for daily tasks
+crontab -e
+
+# Daily backup at 2 AM
+0 2 * * * ~/scripts/backup.sh
+
+# Check battery every 30 minutes
+*/30 * * * * ~/scripts/battery_monitor.sh
+
+# Sync to cloud at 3 AM
+0 3 * * * ~/scripts/cloud_sync.sh
+
+# Clean temp files daily
+0 4 * * * rm -rf /tmp/*
+#+END_EXAMPLE
+
+### Remote Work Workflow
+#+BEGIN_EXAMPLE
+# Start SSH server
+sshd
+
+# From laptop, connect to phone
+ssh -p 8022 u0_a123@192.168.1.50
+
+# Run long tasks on phone
+nohup python long_script.py &
+
+# Disconnect but keep running
+exit
+
+# Later, reconnect and check
+ssh -p 8022 u0_a123@192.168.1.50
+tail -f output.log
+#+END_EXAMPLE
+
+** Server Hosting Workflow
+
+### Host Personal Website
+#+BEGIN_SRC python
+#!/data/data/com.termux/files/usr/bin/python
+# simple_site.py
+
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import os
+
+os.chdir(os.path.expanduser('~/public_html'))
+
+server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
+print("Server running on port 8080")
+print("Access at: http://YOUR_PHONE_IP:8080")
+server.serve_forever()
+#+END_SRC
+
+### File Sharing Server
+#+BEGIN_EXAMPLE
+# Quick file sharing
+cd ~/storage/shared/Downloads
+python -m http.server 8080
+
+# From any device on same network:
+# http://PHONE_IP:8080
+
+# With authentication (using wsgidav)
+pip install wsgidav
+wsgidav --host=0.0.0.0 --port=8080 --auth=anonymous --root=~/storage/shared
+#+END_EXAMPLE
+
+** Data Science Workflow
+
+### Jupyter Notebook on Phone
+#+BEGIN_EXAMPLE
+# Install Jupyter
+pip install jupyter
+
+# Start notebook server
+jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
+
+# Access from computer browser
+# http://PHONE_IP:8888
+
+# Copy token from Termux output
+#+END_EXAMPLE
+
+### Data Analysis Script
+#+BEGIN_SRC python
+#!/data/data/com.termux/files/usr/bin/python
+# analyze_data.py
+
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')  # No display needed
+import matplotlib.pyplot as plt
+
+# Load data
+df = pd.read_csv('~/storage/shared/data.csv')
+
+# Analysis
+summary = df.describe()
+print(summary)
+
+# Create plot
+df.plot(x='date', y='value')
+plt.savefig('~/storage/shared/plot.png')
+
+# Send notification
+import subprocess
+subprocess.run(['termux-notification', 
+                '--title', 'Analysis Complete',
+                '--content', 'Results saved'])
+#+END_SRC
+
+** Media Management Workflow
+
+### Organize Photos
+#+BEGIN_SRC bash
+#!/data/data/com.termux/files/usr/bin/bash
+# organize_photos.sh
+
+SOURCE=~/storage/dcim/Camera
+DEST=~/storage/shared/Photos/Organized
+
+# Create year/month folders
+find "$SOURCE" -name "*.jpg" | while read photo; do
+    # Extract date from EXIF
+    DATE=$(identify -format '%[EXIF:DateTime]' "$photo" 2>/dev/null | cut -d: -f1-2 | tr ':' '/')
+    
+    if [ -n "$DATE" ]; then
+        mkdir -p "$DEST/$DATE"
+        mv "$photo" "$DEST/$DATE/"
+    fi
+done
+
+termux-notification --title "Photos Organized" --content "Check $DEST"
+#+END_SRC
+
+### Batch Image Processing
+#+BEGIN_EXAMPLE
+# Install ImageMagick
+pkg install imagemagick
+
+# Resize all images
+cd ~/storage/dcim/Camera
+for img in *.jpg; do
+    convert "$img" -resize 50% "resized_$img"
+done
+
+# Compress images
+for img in *.jpg; do
+    convert "$img" -quality 85 "compressed_$img"
+done
+
+# Add watermark
+for img in *.jpg; do
+    convert "$img" -pointsize 50 -fill white \
+        -gravity southeast -annotate +10+10 "© 2025" \
+        "watermarked_$img"
+done
+#+END_EXAMPLE
+
+* Quick Reference Tables                                           :reference:
+
+** Essential Commands Summary
+| Category      | Command                   | Action                    |
+|---------------+---------------------------+---------------------------|
+| *Navigation*  | =pwd=                     | Current directory         |
+|               | =ls=                      | List files                |
+|               | =cd DIR=                  | Change directory          |
+| *Files*       | =cat FILE=                | View file                 |
+|               | =nano FILE=               | Edit file                 |
+|               | =cp SRC DST=              | Copy file                 |
+|               | =mv OLD NEW=              | Move/rename               |
+|               | =rm FILE=                 | Delete file               |
+| *Packages*    | =pkg update=              | Update lists              |
+|               | =pkg upgrade=             | Upgrade packages          |
+|               | =pkg install PKG=         | Install package           |
+|               | =pkg search KEYWORD=      | Search packages           |
+| *Storage*     | =termux-setup-storage=    | Access Android storage    |
+|               | =cd ~/storage/shared=     | Go to /sdcard/            |
+| *API*         | =termux-battery-status=   | Battery info              |
+|               | =termux-notification=     | Show notification         |
+|               | =termux-clipboard-get=    | Get clipboard             |
+
+** Termux:API Commands Reference
+| Command                   | Function                  | Permission Required       |
+|---------------------------|---------------------------|---------------------------|
+| =termux-battery-status=   | Battery info              | None                      |
+| =termux-brightness=       | Set brightness            | None                      |
+| =termux-camera-photo=     | Take photo                | Camera                    |
+| =termux-clipboard-get=    | Get clipboard             | None                      |
+| =termux-clipboard-set=    | Set clipboard             | None                      |
+| =termux-contact-list=     | List contacts             | Contacts                  |
+| =termux-dialog=           | Show dialog               | None                      |
+| =termux-download=         | Download file             | Storage                   |
+| =termux-fingerprint=      | Fingerprint auth          | Fingerprint               |
+| =termux-infrared-*=       | IR blaster control        | None                      |
+| =termux-location=         | GPS location              | Location                  |
+| =termux-media-player=     | Play media                | None                      |
+| =termux-microphone-record= | Record audio             | Microphone                |
+| =termux-notification=     | Show notification         | None                      |
+| =termux-sensor=           | Read sensors              | None                      |
+| =termux-share=            | Share file                | None                      |
+| =termux-sms-list=         | List SMS                  | SMS                       |
+| =termux-sms-send=         | Send SMS                  | SMS                       |
+| =termux-storage-get=      | Pick file                 | Storage                   |
+| =termux-telephony-call=   | Make call                 | Phone                     |
+| =termux-toast=            | Show toast                | None                      |
+| =termux-torch=            | Flashlight                | None                      |
+| =termux-tts-speak=        | Text to speech            | None                      |
+| =termux-vibrate=          | Vibrate                   | None                      |
+| =termux-volume=           | Control volume            | None                      |
+| =termux-wallpaper=        | Set wallpaper             | Storage                   |
+| =termux-wifi-*=           | WiFi info                 | Location                  |
+
+** Storage Paths Quick Reference
+| Termux Path           | Android Path              | Description               |
+|-----------------------|---------------------------|---------------------------|
+| =~=                   | =/data/data/com.termux/files/home= | Termux home      |
+| =~/storage/shared=    | =/sdcard/=                | Main storage              |
+| =~/storage/downloads= | =/sdcard/Download/=       | Downloads                 |
+| =~/storage/dcim=      | =/sdcard/DCIM/=           | Camera photos             |
+| =~/storage/pictures=  | =/sdcard/Pictures/=       | Pictures                  |
+| =~/storage/music=     | =/sdcard/Music/=          | Music files               |
+| =~/storage/movies=    | =/sdcard/Movies/=         | Videos                    |
+| =~/storage/external-1= | External SD card         | If available              |
+| =$PREFIX=             | =/data/data/com.termux/files/usr= | Termux system    |
+| =$HOME=               | =/data/data/com.termux/files/home= | Same as ~        |
+| =$TMPDIR=             | =/data/data/com.termux/files/usr/tmp= | Temp files    |
+
+** Useful Packages
+| Package       | Description               | Use Case                  |
+|---------------|---------------------------|---------------------------|
+| =nano=        | Simple text editor        | Quick file editing        |
+| =vim=         | Advanced editor           | Power user editing        |
+| =git=         | Version control           | Code management           |
+| =python=      | Python interpreter        | Scripting, development    |
+| =nodejs=      | JavaScript runtime        | Web development           |
+| =openssh=     | SSH client/server         | Remote access             |
+| =tmux=        | Terminal multiplexer      | Multiple sessions         |
+| =htop=        | Process monitor           | System monitoring         |
+| =curl=        | HTTP client               | API requests              |
+| =wget=        | Download tool             | File downloads            |
+| =rsync=       | File sync                 | Backups                   |
+| =tar=         | Archive tool              | Compression               |
+| =imagemagick= | Image processing          | Photo manipulation        |
+| =ffmpeg=      | Media processing          | Video/audio conversion    |
+| =sqlite=      | Database                  | Local database            |
+| =cronie=      | Cron daemon               | Scheduled tasks           |
+
+** Cron Schedule Quick Reference
+| Pattern       | Description               | Example Time              |
+|---------------|---------------------------|---------------------------|
+| =* * * * *=   | Every minute              | Every minute              |
+| =*/5 * * * *= | Every 5 minutes           | :00, :05, :10, etc.       |
+| =0 * * * *=   | Every hour                | :00 of each hour          |
+| =0 0 * * *=   | Daily at midnight         | 00:00                     |
+| =0 2 * * *=   | Daily at 2 AM             | 02:00                     |
+| =0 0 * * 0=   | Weekly on Sunday          | Sunday 00:00              |
+| =0 0 1 * *=   | Monthly on 1st            | 1st of month 00:00        |
+| =0 9-17 * * 1-5= | Work hours weekdays    | Mon-Fri 9AM-5PM           |
+
+** Common Error Solutions
+| Error                     | Solution                  |
+|---------------------------|---------------------------|
+| =permission denied=       | Use =chmod +x script.sh=  |
+| =command not found=       | Install package: =pkg install= |
+| =no such file=            | Check path with =pwd= and =ls= |
+| =storage not accessible=  | Run =termux-setup-storage= |
+| =package not found=       | Run =pkg update= first    |
+| =API command fails=       | Install =termux-api= package |
+| =can't write to storage=  | Grant storage permission  |
+
+* Tips & Best Practices                                               :tips:
+
+** Workflow Efficiency
+
+*** Custom Aliases
+#+BEGIN_EXAMPLE
+# Add to ~/.bashrc or ~/.zshrc
+
+# Navigation
+alias storage='cd ~/storage/shared'
+alias downloads='cd ~/storage/downloads'
+alias projects='cd ~/projects'
+
+# Package management
+alias update='pkg update && pkg upgrade'
+alias install='pkg install'
+alias search='pkg search'
+
+# Common tasks
+alias backup='~/scripts/backup.sh'
+alias startserver='python -m http.server 8080'
+alias startssh='sshd'
+
+# Git shortcuts
+alias gs='git status'
+alias gp='git push'
+alias gl='git log --oneline'
+
+# Apply: source ~/.bashrc
+#+END_EXAMPLE
+
+*** Keyboard Efficiency
+- Learn Volume Down shortcuts (Volume Down + C for Ctrl-C, etc.)
+- Use TAB completion extensively
+- Use Ctrl-R for reverse history search
+- Enable extra keys row (Volume Down + Q)
+- Consider using bluetooth keyboard for serious work
+
+** Battery Management
+
+*** Optimize for Battery Life
+#+BEGIN_EXAMPLE
+# Disable unnecessary cron jobs when low on battery
+# Use wake locks sparingly
+# Stop servers when not needed
+pkill sshd
+pkill python
+
+# Monitor battery in scripts
+BATTERY=$(termux-battery-status | grep percentage | awk '{print $2}' | tr -d ',')
+if [ $BATTERY -lt 20 ]; then
+    exit 0  # Skip task if battery low
+fi
+#+END_EXAMPLE
+
+** Security Considerations
+
+*** Keep Termux Secure
+- Use strong passwords: =passwd=
+- Keep packages updated: =pkg upgrade=
+- Don't expose SSH to internet without VPN
+- Review scripts before running: =less script.sh=
+- Use SSH keys instead of passwords
+- Be cautious with root scripts
+
+*** Safe Scripting
+- Always validate input in scripts
+- Use quotes around variables: ="$VAR"=
+- Check if files exist before operations
+- Handle errors: =|| echo "Failed"=
+- Log important operations
+- Test scripts before adding to cron
+
+** Common Mistakes to Avoid
+
+- Forgetting =termux-setup-storage= before accessing /sdcard/
+- Not updating packages regularly (run =pkg update= often)
+- Using =sudo= (Termux doesn't use sudo)
+- Expecting to access other apps' data without root
+- Not making scripts executable (=chmod +x=)
+- Hardcoding paths instead of using =~= or =$HOME=
+- Not handling errors in automated scripts
+- Exposing SSH server to internet without security
+
+* Conclusion                                                    :conclusion:
+
+Termux transforms your Android device into a powerful Linux environment, enabling development, automation, and server hosting without root access. The key to mastery is:
+
+1. *Start Simple* - Master basic navigation and package management first
+2. *Practice Regularly* - Use Termux for real tasks, not just experimentation
+3. *Automate Gradually* - Build scripts as you identify repetitive tasks
+4. *Respect Limitations* - Understand what Termux can and cannot do
+5. *Stay Secure* - Keep packages updated and use strong passwords
+
+Remember: Use =pkg search= to find packages, =man command= for help, and the Termux wiki for detailed documentation!
+
+** Final Quick Reference
+| Situation             | Command               | When to Use               |
+|-----------------------+-----------------------|---------------------------|
+| New install           | =pkg update && pkg upgrade= | After installation  |
+| Can't access storage  | =termux-setup-storage= | First time setup         |
+| Need to edit file     | =nano file.txt=       | Quick text editing        |
+| Run script            | =bash script.sh=      | Execute bash script       |
+| Stop process          | =Ctrl-C=              | Kill running program      |
+| Exit Termux           | =exit= or =Ctrl-D=    | Close session             |
+| Check battery         | =termux-battery-status= | Monitor power           |
+
+** Important Limitations to Remember
+| Can Do                    | Cannot Do                 |
+|---------------------------|---------------------------|
+| ✓ Access /sdcard/         | ✗ Access other apps' data |
+| ✓ Send SMS via API        | ✗ Read Telegram messages directly |
+| ✓ Make phone calls        | ✗ Control other apps' UI  |
+| ✓ Read sensors            | ✗ Simulate screen taps (no root) |
+| ✓ Run Linux packages      | ✗ Use sudo command        |
+| ✓ Host web servers        | ✗ Access system root      |
+
