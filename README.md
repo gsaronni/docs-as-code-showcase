@@ -4,6 +4,7 @@ A showcase of technical documentation approaches and personal reference material
 
 [![Documentation](https://img.shields.io/badge/docs-asciidoctor-red.svg)](https://asciidoctor.org/)
 [![Markdown](https://img.shields.io/badge/markdown-reference-green.svg)](https://www.markdownguide.org/)
+[![Org-mode](https://img.shields.io/badge/org--mode-documentation-77aa99.svg)](https://orgmode.org/)
 
 ## Overview
 
