@@ -1,0 +1,1067 @@
+#+TITLE: PowerShell 7+ Cheatsheet
+#+AUTHOR: Gabriele Saronni
+#+DATE: 2026
+#+DESCRIPTION: Personal reference and portfolio cheatsheet — PowerShell 7+ only. Covers core language, sysadmin and netadmin modules, VCF PowerCLI, and REST APIs.
+#+STARTUP: overview
+#+PROPERTY: header-args:powershell :results output
+
+# PS5.1 note: this file targets PowerShell 7+. A small number of entries are
+# tagged :ps51compat: where the syntax also works on 5.1. Nothing here is
+# 5.1-only. Get-WmiObject (removed in PS7) is intentionally excluded; use
+# Get-CimInstance instead.
+
+* Discovery & Help
+:PROPERTIES:
+:DESCRIPTION: Finding commands and reading documentation
+:END:
+
+#+begin_src powershell
+Get-Command                                               # All available commands (native binaries + cmdlets + functions)
+Get-Command -Module Microsoft*                            # Commands exported from modules matching Microsoft*
+Get-Command -Name *item                                   # Commands whose name ends in "item"
+Get-Command -Verb Get -Noun VM                            # Filter by verb and noun separately
+
+Get-Help Get-Command                                      # Full help for a cmdlet
+Get-Help Get-Command -Parameter Module                    # Help for a specific parameter
+Get-Help about_Variables                                  # Read a conceptual "about_" topic (man page equivalent)
+Get-Help Get-Process -Examples                            # Show only usage examples
+
+$PSVersionTable                                           # Show PS version, OS, CLR version — use this first when debugging env issues
+Get-Module -ListAvailable                                 # All modules installed on the system ($env:PSModulePath)
+Get-Module                                                # Modules currently imported into the session
+#+end_src
+
+* Operators
+:PROPERTIES:
+:DESCRIPTION: Assignment, comparison, type, logical, and string operators
+:END:
+
+** Assignment
+#+begin_src powershell
+$a = 2                                                    # Basic assignment
+$a += 1                                                   # Increment
+$a -= 1                                                   # Decrement
+$a ??= 'default'                                          # [PS7+] Assign only if $a is null (null-coalescing assignment)
+#+end_src
+
+** Comparison
+#+begin_src powershell
+$a -eq 0                                                  # Equal
+$a -ne 5                                                  # Not equal
+$a -gt 2                                                  # Greater than
+$a -lt 3                                                  # Less than
+$a -ge 2                                                  # Greater than or equal
+$a -le 3                                                  # Less than or equal
+#+end_src
+
+** String & Collection
+#+begin_src powershell
+$FirstName = 'Trevor'
+$FirstName -like 'T*'                                     # Wildcard match — returns $true
+$FirstName -notlike 'T*'                                  # Inverse wildcard match
+
+'Celery' -in @('Bacon', 'Sausage', 'Steak')               # Is left-hand value in the array? Returns $false
+'Celery' -notin @('Bacon', 'Sausage', 'Steak')            # Returns $true
+#+end_src
+
+** Type Checking
+#+begin_src powershell
+5 -is [int32]                                             # Returns $true
+5 -is [string]                                            # Returns $false
+'Trevor' -is [string]                                     # Returns $true
+'Trevor' -isnot [string]                                  # Returns $false
+$true -is [bool]                                          # Returns $true
+#+end_src
+
+** Null Coalescing & Ternary                               :ps7only:
+#+begin_src powershell
+$value = $null ?? 'fallback'                              # [PS7+] Returns 'fallback' if left side is null
+$FoodToEat = $true ? 'bacon' : 'beets'                    # [PS7+] Ternary operator
+#+end_src
+
+** Pipeline Chain Operators                                :ps7only:
+#+begin_src powershell
+Get-Process notepad && Stop-Process -Name notepad         # [PS7+] Run right side only if left side succeeded
+Get-Process notepad || Write-Host 'Not running'           # [PS7+] Run right side only if left side failed
+#+end_src
+
+* Strings
+:PROPERTIES:
+:DESCRIPTION: Interpolation, formatting, manipulation, here-strings
+:END:
+
+#+begin_src powershell
+# Single vs double quotes
+$name = 'Trevor'
+"Hello $name"                                             # Double quotes interpolate variables → "Hello Trevor"
+'Hello $name'                                             # Single quotes are literal → 'Hello $name'
+"Today is $(Get-Date -Format 'yyyy-MM-dd')"               # Embed expressions with $()
+
+# Format operator
+'{0} {1}' -f 'Hello', 'World'                             # Positional formatting → "Hello World"
+'{0:N2}' -f 3.14159                                       # Number formatting → "3.14"
+'{0,10}' -f 'right'                                       # Right-align in field width 10
+
+# Manipulation
+'Hello World' -replace 'World', 'PowerShell'              # Regex-based replace → "Hello PowerShell"
+'a,b,c,d' -split ','                                      # Split into array → @('a','b','c','d')
+@('a','b','c') -join '-'                                  # Join array into string → "a-b-c"
+'  trim me  '.Trim()                                      # Remove leading/trailing whitespace
+'hello'.ToUpper()                                         # → "HELLO"
+'HELLO'.ToLower()                                         # → "hello"
+'hello world'.IndexOf('world')                            # Returns 6
+'hello world'.Substring(6)                                # Returns 'world'
+'hello world'.Contains('world')                           # Returns $true
+
+# Here-strings (preserve newlines and quotes)
+$block = @"
+Line one
+Line two with $name interpolated
+"@
+
+$literal = @'
+Line one
+$name is NOT interpolated here
+'@
+#+end_src
+
+* Regular Expressions
+:PROPERTIES:
+:DESCRIPTION: Match, replace, named captures, multi-match
+:END:
+
+#+begin_src powershell
+'Trevor' -match '^T\w*'                                   # Returns $true; populates $Matches automatic variable
+$Matches[0]                                               # Returns 'Trevor'
+
+@('Trevor', 'Billy', 'Bobby') -match '^B'                 # Match against array — returns matching elements: Billy, Bobby
+
+'Trevor' -replace '^(\w{3})', 'XXX'                       # Regex replace → "XXXvor"
+
+# Named capture groups
+'2026-03-13' -match '(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})'
+$Matches['year']                                          # Returns '2026'
+$Matches['month']                                         # Returns '03'
+
+# Multiple matches with [regex] class
+$regex = [regex]'(\w{3,8})'
+$regex.Matches('Trevor Bobby Dillon Joe Jacob').Value     # Returns all matching words as array
+#+end_src
+
+* Variables
+:PROPERTIES:
+:DESCRIPTION: Declaration, typing, scoping, special variables
+:END:
+
+#+begin_src powershell
+$a = 0                                                    # Declare and assign
+[int]$a = 42                                              # Typed variable — enforces int on all subsequent assignments
+[string]$b = 'hello'                                      # Typed string variable
+
+# Special automatic variables
+$_                                                        # Current pipeline object (alias for $PSItem)
+$PSItem                                                   # Current pipeline object (explicit form; identical to $_)
+$?                                                        # Boolean — did the last command succeed?
+$LASTEXITCODE                                             # Exit code of the last native binary (e.g. ping, ssh)
+$Error                                                    # Array of recent errors; $Error[0] is the most recent
+$null                                                     # The null value — also used to suppress output: $null = Do-Thing
+$HOME                                                     # Current user's home directory
+$env:PATH                                                 # Environment variable access via $env: drive
+$env:COMPUTERNAME                                         # Hostname (Windows) or $env:HOSTNAME (Linux/macOS)
+$PSScriptRoot                                             # Directory of the currently running script
+$MyInvocation.MyCommand.Name                              # Name of the current script or function
+
+# Variable management
+Get-Variable                                              # List all variables in scope
+Get-Variable | Where-Object Options -contains 'constant'  # Show constants
+New-Variable -Name Config -Value @{} -Option ReadOnly     # ReadOnly variable (requires -Force to remove)
+New-Variable -Name MAX -Value 100 -Option Constant        # Constant — survives only until session ends
+Remove-Variable -Name Config -Force                       # Remove a ReadOnly variable
+#+end_src
+
+* Flow Control
+:PROPERTIES:
+:DESCRIPTION: Conditionals, loops, switch, break/continue
+:END:
+
+#+begin_src powershell
+# if / elseif / else
+if ($a -gt 10) {
+    'big'
+} elseif ($a -gt 5) {
+    'medium'
+} else {
+    'small'
+}
+
+# Loops
+for ($i = 0; $i -le 10; $i++) { Write-Host $i }          # Classic for loop
+foreach ($item in (Get-Process)) { $item.Name }           # Iterate over a collection
+while ($true) { if (1 -eq 1) { break } }                  # While loop with break
+do { 'runs at least once' } while ($false)                # do..while — always executes once
+
+# ForEach-Object in pipeline
+Get-Process | ForEach-Object { $_.Name }                  # Inline pipeline iteration
+Get-Process | % { $_.Name }                               # % is the alias for ForEach-Object
+
+# ForEach-Object -Parallel                                 :ps7only:
+1..10 | ForEach-Object -Parallel {
+    "Processing $_"
+} -ThrottleLimit 5                                        # [PS7+] Parallel execution with throttle
+
+# Switch
+switch ('test') {
+    'test'  { 'matched literal'; break }
+    default { 'no match' }
+}
+
+switch -Regex (@('Trevor', 'Daniel', 'Bobby')) {
+    '^T' { "$PSItem starts with T"; break }
+    'o'  { "$PSItem contains o" }                         # Omitting break allows multiple matches per input
+}
+
+switch -Wildcard ('Hello World') {
+    'Hello*' { 'matched wildcard' }
+}
+#+end_src
+
+* Functions
+:PROPERTIES:
+:DESCRIPTION: Basic functions, advanced functions, pipeline input, CmdletBinding
+:END:
+
+#+begin_src powershell
+# Basic function
+function Add ($a, $b) { $a + $b }
+
+# Advanced function — the production-grade pattern
+function Get-ServerStatus {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [string]$ComputerName,
+
+        [Parameter()]
+        [int]$Port = 443,
+
+        [Parameter()]
+        [ValidateSet('HTTP','HTTPS','SSH')]
+        [string]$Protocol = 'HTTPS'
+    )
+    begin {
+        # Runs once before pipeline input — use for setup/init
+    }
+    process {
+        # Runs once per pipeline object — $ComputerName is the current item
+        Write-Verbose "Checking $ComputerName on $Protocol:$Port"
+        Test-NetConnection -ComputerName $ComputerName -Port $Port
+    }
+    end {
+        # Runs once after all pipeline input — use for cleanup/summary
+    }
+}
+
+# Splatting — pass a hashtable as parameters (cleaner than long lines)
+$Params = @{
+    ComputerName = 'server01'
+    Port         = 22
+    Protocol     = 'SSH'
+}
+Get-ServerStatus @Params
+#+end_src
+
+* Error Handling
+:PROPERTIES:
+:DESCRIPTION: try/catch/finally, error variables, terminating vs non-terminating errors
+:END:
+
+#+begin_src powershell
+# try / catch / finally
+try {
+    Get-Item 'C:\nonexistent' -ErrorAction Stop           # -ErrorAction Stop makes non-terminating errors catchable
+} catch [System.IO.FileNotFoundException] {
+    Write-Warning "File not found: $_"
+} catch {
+    Write-Error "Unexpected error: $($_.Exception.Message)"
+} finally {
+    # Always runs — use for cleanup (close connections, etc.)
+    Write-Verbose 'Cleanup complete'
+}
+
+# Error action preferences
+Get-Item 'missing' -ErrorAction SilentlyContinue          # Suppress error, continue execution
+Get-Item 'missing' -ErrorAction Stop                      # Promote to terminating error (catchable)
+Get-Item 'missing' -ErrorAction Ignore                    # Suppress error AND don't add to $Error
+
+# Capture error in a variable
+Get-Item 'missing' -ErrorVariable myErr -ErrorAction SilentlyContinue
+$myErr[0].Exception.Message                               # Inspect the captured error
+
+# Inspect last error
+$Error[0]                                                 # Most recent error object
+$Error[0].Exception.Message                               # Just the message string
+$Error[0].InvocationInfo.Line                             # The line that caused the error
+Get-Error                                                 # [PS7+] Detailed, formatted error view for $Error[0]
+
+# Terminating vs non-terminating
+# Non-terminating: command reports an error but execution continues (default for most cmdlets)
+# Terminating: execution stops immediately unless caught in try/catch
+# Use -ErrorAction Stop to convert non-terminating → terminating
+#+end_src
+
+* Objects & Data
+:PROPERTIES:
+:DESCRIPTION: PSCustomObject, Select-Object, Where-Object, Sort-Object, Group-Object, Measure-Object
+:END:
+
+#+begin_src powershell
+# Creating objects — PSCustomObject is the idiomatic modern approach
+$server = [PSCustomObject]@{
+    Name      = 'web01'
+    IPAddress = '10.0.0.1'
+    Role      = 'Web'
+    Online    = $true
+}
+$server.Name                                              # Property access
+$server | Add-Member -NotePropertyName 'OS' -NotePropertyValue 'Ubuntu 24'  # Add a property after creation
+
+# Pipeline data manipulation
+Get-Process | Select-Object Name, Id, CPU                 # Project specific properties
+Get-Process | Select-Object -First 5                      # Take first 5 objects
+Get-Process | Select-Object -ExpandProperty Name          # Return the raw value, not a wrapped object
+Get-Process | Where-Object { $_.CPU -gt 10 }              # Filter by condition
+Get-Process | Where-Object Name -match '^c'               # Simplified syntax for single-property filter
+Get-Process | Sort-Object -Property CPU -Descending       # Sort descending
+Get-Process | Group-Object -Property Name                 # Group into buckets by property
+Get-Process | Measure-Object -Property CPU -Sum -Average  # Aggregate stats
+Get-ChildItem | Compare-Object -ReferenceObject $baseline # Diff two collections
+Get-Process | Select-Object Name, CPU | Format-Table -AutoSize  # Output as table
+Get-Process | Select-Object Name, CPU | Format-List       # Output as property list
+Get-Process | Out-GridView                                # [Windows] Interactive filterable grid
+#+end_src
+
+* Hashtables
+:PROPERTIES:
+:DESCRIPTION: Creation, access, ordered, nested
+:END:
+
+#+begin_src powershell
+# Standard hashtable
+$Person = @{
+    FirstName = 'Trevor'
+    LastName  = 'Sullivan'
+    Likes     = @('Bacon', 'Beer', 'PowerShell')
+}
+
+$Person.FirstName                                         # Dot notation access
+$Person['FirstName']                                      # Index notation access
+$Person.Likes[-1]                                         # Last element of nested array → 'PowerShell'
+$Person.Age = 50                                          # Add a new key
+$Person.Remove('Age')                                     # Remove a key
+$Person.ContainsKey('LastName')                           # Check if key exists → $true
+$Person.Keys                                              # All keys
+$Person.Values                                            # All values
+
+# Ordered hashtable (preserves insertion order)
+$Config = [ordered]@{
+    Server   = 'vcenter01'
+    Port     = 443
+    UseHTTPS = $true
+}
+#+end_src
+
+* Classes
+:PROPERTIES:
+:DESCRIPTION: Class definition, constructors, methods, inheritance
+:END:
+
+#+begin_src powershell
+class NetworkDevice {
+    [string]   $Hostname
+    [string]   $IPAddress
+    [string]   $Role      = 'Unknown'
+    [bool]     $Reachable = $false
+
+    # Default constructor
+    NetworkDevice() {}
+
+    # Parameterized constructor
+    NetworkDevice([string]$Hostname, [string]$IPAddress) {
+        $this.Hostname  = $Hostname
+        $this.IPAddress = $IPAddress
+    }
+
+    # Method
+    [bool] Ping() {
+        $result = Test-Connection -ComputerName $this.IPAddress -Count 1 -Quiet
+        $this.Reachable = $result
+        return $result
+    }
+
+    [string] ToString() {
+        return '{0} ({1}) — Reachable: {2}' -f $this.Hostname, $this.IPAddress, $this.Reachable
+    }
+}
+
+$dev = [NetworkDevice]::new('core-sw-01', '10.0.0.254')
+$dev.Role = 'Core Switch'
+$dev.Ping()
+$dev.ToString()
+
+# Inheritance
+class ManagedSwitch : NetworkDevice {
+    [int] $PortCount
+
+    ManagedSwitch([string]$Hostname, [string]$IPAddress, [int]$PortCount)
+        : base($Hostname, $IPAddress) {
+        $this.PortCount = $PortCount
+    }
+}
+#+end_src
+
+* Filesystem
+:PROPERTIES:
+:DESCRIPTION: Files, directories, paths, filtering
+:END:
+
+#+begin_src powershell
+# Path handling — always use Join-Path, never string concatenation
+$base = 'C:\Data'
+Join-Path $base 'logs' 'app.log'                          # → C:\Data\logs\app.log
+Split-Path 'C:\Data\logs\app.log' -Leaf                   # → app.log
+Split-Path 'C:\Data\logs\app.log' -Parent                 # → C:\Data\logs
+Test-Path 'C:\Data\logs'                                  # Check existence — returns $true/$false
+Resolve-Path '.\relative\path'                            # Convert relative to absolute path
+
+# Directories
+New-Item -Path 'C:\test' -ItemType Directory              # Create directory
+Remove-Item -Path 'C:\test' -Recurse -Force               # Delete directory tree
+Get-ChildItem -Path 'C:\Data' -Recurse -Filter '*.log'    # Recursive file search
+Get-ChildItem -Path 'C:\Data' | Where-Object { -not $_.PSIsContainer }  # Files only
+
+# Files
+New-Item -Path 'C:\test\file.txt'                         # Create empty file
+Set-Content -Path 'C:\test\file.txt' -Value 'hello'       # Write (overwrite)
+Add-Content -Path 'C:\test\file.txt' -Value 'appended'    # Append
+Get-Content -Path 'C:\test\file.txt'                      # Read all lines as array
+Get-Content -Path 'C:\test\file.txt' -Raw                 # Read as single string
+Remove-Item -Path 'C:\test\file.txt'                      # Delete
+
+# Copy / Move
+Copy-Item -Path 'C:\src\file.txt' -Destination 'C:\dst\'
+Move-Item -Path 'C:\src\file.txt' -Destination 'C:\dst\'
+Rename-Item -Path 'C:\dst\file.txt' -NewName 'renamed.txt'
+#+end_src
+
+* Modules
+:PROPERTIES:
+:DESCRIPTION: Installing, importing, managing, creating
+:END:
+
+#+begin_src powershell
+# Discovery
+Find-Module -Name '*network*'                             # Search PowerShell Gallery
+Find-Module -Tag 'network'                                # Search by tag
+
+# Install
+Install-Module -Name ImportExcel -Scope CurrentUser       # Install for current user (no admin required)
+Install-Module -Name ImportExcel -Force                   # Install/overwrite system-wide (admin)
+Install-Module -Name ImportExcel -RequiredVersion 7.8.0   # Pin a specific version
+
+# Use
+Import-Module -Name ImportExcel                           # Explicitly import
+Remove-Module -Name ImportExcel                           # Remove from current session
+Update-Module -Name ImportExcel                           # Update to latest version
+Uninstall-Module -Name ImportExcel                        # Uninstall (only if installed via Install-Module)
+
+# Private / internal repositories
+Register-PSRepository -Name 'CorpRepo' -SourceLocation 'https://nuget.internal/v2'
+Unregister-PSRepository -Name 'CorpRepo'
+
+# In-memory module (advanced — useful for testing)
+New-Module -Name 'utils' -ScriptBlock {
+    function Add ($a, $b) { $a + $b }
+} | Import-Module
+#+end_src
+
+* Jobs & Async
+:PROPERTIES:
+:DESCRIPTION: Background jobs, event registration, timers
+:END:
+
+#+begin_src powershell
+# Background jobs
+$job = Start-Job -ScriptBlock { Get-Process }             # Run in background
+Get-Job                                                   # List jobs and their state
+Receive-Job -Job $job                                     # Retrieve output (clears buffer)
+Receive-Job -Job $job -Keep                               # Retrieve output without clearing
+Wait-Job -Job $job                                        # Block until job completes
+Remove-Job -Job $job                                      # Clean up
+
+# Filesystem watcher event
+$watcher = [System.IO.FileSystemWatcher]::new('C:\tmp')
+Register-ObjectEvent -InputObject $watcher -EventName Created -Action {
+    Write-Host "New file: $($Event.SourceEventArgs.FullPath)"
+}
+
+# Timer event
+$timer = [System.Timers.Timer]::new(5000)
+Register-ObjectEvent -InputObject $timer -EventName Elapsed -Action {
+    Write-Host 'Timer fired'
+}
+$timer.Start()
+Unregister-Event -SourceIdentifier *                      # Remove all event subscriptions
+#+end_src
+
+* Remote & SSH
+:PROPERTIES:
+:DESCRIPTION: PSSession, Invoke-Command, SSH remoting (PS7+)
+:END:
+
+#+begin_src powershell
+# WinRM-based remoting (Windows to Windows)
+$session = New-PSSession -ComputerName 'server01'
+Invoke-Command -Session $session -ScriptBlock { Get-Process }
+Enter-PSSession -Session $session                         # Interactive remote shell
+Exit-PSSession
+Remove-PSSession -Session $session
+
+# Run command without persistent session (one-shot)
+Invoke-Command -ComputerName 'server01' -ScriptBlock { hostname }
+
+# SSH-based remoting (PS7+ — works cross-platform)          :ps7only:
+$session = New-PSSession -HostName 'ubuntu-host' -UserName 'admin' -SSHTransport
+Invoke-Command -Session $session -ScriptBlock { uname -a }
+Enter-PSSession -HostName 'ubuntu-host' -UserName 'admin' -SSHTransport
+
+# Useful network diagnostics
+Test-NetConnection -ComputerName 'google.com' -Port 443   # TCP port check + ping + route info
+Test-NetConnection -ComputerName 'google.com' -TraceRoute # Traceroute
+(Test-NetConnection -ComputerName 'google.com').PingSucceeded  # Just the boolean
+#+end_src
+
+* WMI / CIM
+:PROPERTIES:
+:DESCRIPTION: Hardware and OS inventory via CIM (Get-WmiObject removed in PS7)
+:END:
+
+# NOTE: Get-WmiObject was removed in PowerShell 7. Use Get-CimInstance exclusively.
+# CIM uses WS-Management (WSMan) transport instead of DCOM — works remotely without
+# needing legacy WMI firewall rules.
+
+#+begin_src powershell
+Get-CimInstance -ClassName Win32_BIOS                     # BIOS / firmware info
+Get-CimInstance -ClassName Win32_OperatingSystem          # OS name, version, build, uptime
+Get-CimInstance -ClassName Win32_ComputerSystem           # Manufacturer, model, RAM, domain
+Get-CimInstance -ClassName Win32_Processor                # CPU model, cores, clock speed
+Get-CimInstance -ClassName Win32_PhysicalMemory           # Physical RAM sticks
+Get-CimInstance -ClassName Win32_DiskDrive                # Physical disk info
+Get-CimInstance -ClassName Win32_LogicalDisk              # Logical drive info (free space etc.)
+Get-CimInstance -ClassName Win32_NetworkAdapter           # Network adapters (physical + virtual)
+Get-CimInstance -ClassName Win32_VideoController          # GPU info
+Get-CimInstance -ClassName Win32_Service                  # All Windows services
+
+# Remote CIM query
+Get-CimInstance -ClassName Win32_OperatingSystem -ComputerName 'server01'
+
+# Explore available classes
+Get-CimClass -Namespace root\cimv2                        # All classes in the default namespace
+Get-CimInstance -Namespace root -ClassName __NAMESPACE    # Child namespaces under root
+#+end_src
+
+* PSDrives
+:PROPERTIES:
+:DESCRIPTION: Virtual drives — filesystem, registry, certificate store, and custom
+:END:
+
+#+begin_src powershell
+Get-PSDrive                                               # List all active PSDrives
+New-PSDrive -Name videos -PSProvider FileSystem -Root 'D:\media\videos'      # Map a path to a short name
+New-PSDrive -Name h -PSProvider FileSystem -Root '\\nas\share$' -Persist     # Persistent network drive (visible in Explorer)
+Set-Location -Path videos:                                # cd into a PSDrive
+Remove-PSDrive -Name videos
+
+# Registry via PSDrive (Windows)
+Set-Location HKLM:\SOFTWARE\Microsoft
+Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+
+# Certificate store via PSDrive (Windows)
+Set-Location Cert:\LocalMachine\My
+Get-ChildItem Cert:\LocalMachine\My                       # List certs in local machine personal store
+#+end_src
+
+* REST APIs
+:PROPERTIES:
+:DESCRIPTION: Invoke-RestMethod vs Invoke-WebRequest, auth patterns, vCenter REST API
+:END:
+
+** Invoke-RestMethod vs Invoke-WebRequest
+#+begin_src powershell
+# Invoke-RestMethod   — parses JSON/XML automatically, returns objects. Use this for APIs.
+# Invoke-WebRequest   — returns raw HTTP response (StatusCode, Headers, Content as string).
+#                       Use when you need headers, status codes, or non-JSON responses.
+
+# Basic GET
+Invoke-RestMethod -Uri 'https://api.github.com/events' -Method Get
+
+# Inspect raw response (status code, headers)
+$response = Invoke-WebRequest -Uri 'https://api.github.com'
+$response.StatusCode
+$response.Headers['X-RateLimit-Remaining']
+$response.Content                                         # Raw JSON string
+#+end_src
+
+** Authentication Patterns
+#+begin_src powershell
+# Bearer token (OAuth2, JWT — most modern APIs)
+$headers = @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri 'https://api.example.com/data' -Headers $headers
+
+# API key in header
+$headers = @{ 'X-API-Key' = $apiKey }
+Invoke-RestMethod -Uri 'https://api.example.com/data' -Headers $headers
+
+# Basic auth (encode credentials to Base64)
+$cred    = 'user:password'
+$encoded = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($cred))
+$headers = @{ Authorization = "Basic $encoded" }
+Invoke-RestMethod -Uri 'https://api.example.com' -Headers $headers
+
+# POST with JSON body
+$body = @{ name = 'web01'; role = 'web' } | ConvertTo-Json
+Invoke-RestMethod -Uri 'https://api.example.com/servers' `
+    -Method Post `
+    -Headers $headers `
+    -Body $body `
+    -ContentType 'application/json'
+
+# Ignore SSL certificate errors (lab / self-signed certs only — never in prod)
+Invoke-RestMethod -Uri 'https://lab-host' -SkipCertificateCheck   # [PS7+]
+#+end_src
+
+** vCenter REST API
+#+begin_src powershell
+# Authenticate — get session token
+$vcenter = 'vcenter.lab.local'
+$cred    = 'administrator@vsphere.local:VMware1!'
+$encoded = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($cred))
+$authHeaders = @{ Authorization = "Basic $encoded" }
+
+$session = Invoke-RestMethod -Uri "https://$vcenter/api/session" `
+    -Method Post `
+    -Headers $authHeaders `
+    -SkipCertificateCheck
+
+$apiHeaders = @{ 'vmware-api-session-id' = $session }
+
+# List all VMs
+$vms = Invoke-RestMethod -Uri "https://$vcenter/api/vcenter/vm" `
+    -Headers $apiHeaders `
+    -SkipCertificateCheck
+$vms | Select-Object name, power_state, memory_size_MiB
+
+# Get VM details
+$vmId = $vms[0].vm
+Invoke-RestMethod -Uri "https://$vcenter/api/vcenter/vm/$vmId" `
+    -Headers $apiHeaders `
+    -SkipCertificateCheck
+
+# Power operations
+Invoke-RestMethod -Uri "https://$vcenter/api/vcenter/vm/$vmId/power?action=start" `
+    -Method Post `
+    -Headers $apiHeaders `
+    -SkipCertificateCheck
+
+# List hosts
+Invoke-RestMethod -Uri "https://$vcenter/api/vcenter/host" `
+    -Headers $apiHeaders `
+    -SkipCertificateCheck
+
+# Terminate session
+Invoke-RestMethod -Uri "https://$vcenter/api/session" `
+    -Method Delete `
+    -Headers $apiHeaders `
+    -SkipCertificateCheck
+#+end_src
+
+* VCF PowerCLI (VMware)
+:PROPERTIES:
+:DESCRIPTION: VCF PowerCLI 9.0+ — vSphere, vSAN, NSX-T, vCenter management
+:END:
+
+# Formerly "VMware PowerCLI" — renamed to VCF PowerCLI by Broadcom in 2025.
+# Install: Install-Module -Name VCF.PowerCLI -Scope CurrentUser
+# 7000+ cmdlets across vSphere, vSAN, NSX-T, HCX, SRM, Horizon, VCF/SDDC Manager.
+# PS7+ recommended; PS5.1 support is being phased out.
+
+** Connection
+#+begin_src powershell
+Install-Module -Name VCF.PowerCLI -Scope CurrentUser      # Install from PS Gallery
+
+# Suppress certificate warning for self-signed lab vCenters
+Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+
+Connect-VIServer -Server 'vcenter.lab.local' -Credential (Get-Credential)
+Connect-VIServer -Server 'vcenter.lab.local' -User 'administrator@vsphere.local' -Password 'VMware1!'
+Disconnect-VIServer -Server * -Confirm:$false             # Disconnect all sessions
+$global:DefaultVIServers                                  # Show active connections
+#+end_src
+
+** VMs
+#+begin_src powershell
+Get-VM                                                    # List all VMs
+Get-VM -Name 'web*'                                       # Filter by name pattern
+Get-VM | Where-Object { $_.PowerState -eq 'PoweredOff' } # Powered-off VMs
+Get-VM | Select-Object Name, PowerState, NumCpu, MemoryGB # Key properties
+
+Start-VM -VM 'web01'                                      # Power on
+Stop-VM -VM 'web01' -Confirm:$false                       # Power off (hard)
+Restart-VM -VM 'web01'                                    # Restart
+Suspend-VM -VM 'web01'                                    # Suspend
+
+New-VM -Name 'test01' -VMHost (Get-VMHost | Select-Object -First 1) `
+    -Datastore (Get-Datastore | Select-Object -First 1)  # Create a VM shell
+
+Remove-VM -VM 'test01' -DeletePermanently -Confirm:$false # Delete VM and files
+
+Set-VM -VM 'web01' -NumCpu 4 -MemoryGB 8 -Confirm:$false  # Resize CPU/RAM
+Get-VM 'web01' | Get-Snapshot                             # List snapshots
+New-Snapshot -VM 'web01' -Name 'pre-patch' -Description 'Before patching'
+Remove-Snapshot -Snapshot (Get-VM 'web01' | Get-Snapshot -Name 'pre-patch') -Confirm:$false
+#+end_src
+
+** Hosts & Clusters
+#+begin_src powershell
+Get-VMHost                                                # List all ESXi hosts
+Get-VMHost | Select-Object Name, ConnectionState, PowerState, Version
+Get-Cluster                                               # List clusters
+Get-Cluster -Name 'prod-cluster' | Get-VMHost             # Hosts in a specific cluster
+
+Set-VMHost -VMHost 'esxi01' -State Maintenance            # Enter maintenance mode
+Set-VMHost -VMHost 'esxi01' -State Connected              # Exit maintenance mode
+
+Get-VMHostNtpServer -VMHost 'esxi01'                      # NTP config
+Add-VMHostNtpServer -VMHost 'esxi01' -NtpServer 'pool.ntp.org'
+#+end_src
+
+** Networking
+#+begin_src powershell
+Get-VirtualSwitch                                         # List all vSwitches (standard)
+Get-VDSwitch                                              # List distributed vSwitches
+Get-VirtualPortGroup                                      # List port groups
+Get-VMHostNetworkAdapter                                  # Physical NICs on hosts
+
+New-VirtualSwitch -VMHost 'esxi01' -Name 'vSwitch1'
+New-VirtualPortGroup -VirtualSwitch 'vSwitch1' -Name 'VLAN100' -VLanId 100
+#+end_src
+
+** Storage & vSAN
+#+begin_src powershell
+Get-Datastore                                             # List all datastores
+Get-Datastore | Select-Object Name, FreeSpaceGB, CapacityGB, Type
+Get-DatastoreCluster                                      # List datastore clusters
+
+Get-VsanClusterConfiguration -Cluster 'vsan-cluster'      # vSAN cluster config
+Get-VsanDiskGroup -VMHost 'esxi01'                        # vSAN disk groups on a host
+Test-VsanClusterHealth -Cluster 'vsan-cluster'            # Run vSAN health check
+#+end_src
+
+** Migration (6.7 → 8 relevant)
+#+begin_src powershell
+# Cross-vCenter vMotion — connect to both vCenters first
+Connect-VIServer -Server 'vcenter67.lab.local' -User $user -Password $pass
+Connect-VIServer -Server 'vcenter8.lab.local'  -User $user -Password $pass
+
+$vm           = Get-VM -Name 'web01' -Server 'vcenter67.lab.local'
+$destHost     = Get-VMHost -Name 'esxi8-host01' -Server 'vcenter8.lab.local'
+$destDatastore = Get-Datastore -Name 'vsanDatastore' -Server 'vcenter8.lab.local'
+$destPool     = Get-ResourcePool -Name 'Resources' -Server 'vcenter8.lab.local'
+
+Move-VM -VM $vm `
+    -Destination $destHost `
+    -Datastore $destDatastore `
+    -InventoryLocation $destPool   # Cross-vCenter vMotion (live migration)
+
+# Bulk migration — move all powered-off VMs from old cluster
+Get-VM -Server 'vcenter67.lab.local' |
+    Where-Object { $_.PowerState -eq 'PoweredOff' } |
+    Move-VM -Destination $destHost -Datastore $destDatastore -Confirm:$false
+#+end_src
+
+* ActiveDirectory Module
+:PROPERTIES:
+:DESCRIPTION: User, group, computer, and OU management via RSAT ActiveDirectory module
+:END:
+
+# Install: Add-WindowsCapability -Online -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+# Or:      Install-Module -Name ActiveDirectory (PS Gallery wrapper)
+# Requires: Domain-joined machine or explicit -Server targeting
+
+#+begin_src powershell
+Import-Module ActiveDirectory
+
+# Users
+Get-ADUser -Identity 'jsmith'                             # Get specific user
+Get-ADUser -Filter { Name -like 'John*' }                 # Filter by name
+Get-ADUser -Filter * -SearchBase 'OU=Staff,DC=corp,DC=local' -Properties *  # All users in OU with all properties
+Get-ADUser -Identity 'jsmith' -Properties MemberOf, LastLogonDate, PasswordExpired
+
+New-ADUser -Name 'Jane Doe' `
+    -SamAccountName 'jdoe' `
+    -UserPrincipalName 'jdoe@corp.local' `
+    -Path 'OU=Staff,DC=corp,DC=local' `
+    -AccountPassword (ConvertTo-SecureString 'P@ssw0rd!' -AsPlainText -Force) `
+    -Enabled $true
+
+Set-ADUser -Identity 'jdoe' -Title 'Engineer' -Department 'IT'
+Set-ADAccountPassword -Identity 'jdoe' -NewPassword (ConvertTo-SecureString 'NewP@ss!' -AsPlainText -Force) -Reset
+Enable-ADAccount -Identity 'jdoe'
+Disable-ADAccount -Identity 'jdoe'
+Remove-ADUser -Identity 'jdoe' -Confirm:$false
+Unlock-ADAccount -Identity 'jdoe'                         # Unlock locked-out account
+
+# Groups
+Get-ADGroup -Identity 'Domain Admins'
+Get-ADGroupMember -Identity 'Domain Admins' -Recursive    # All members including nested
+Add-ADGroupMember -Identity 'IT-Staff' -Members 'jdoe', 'jsmith'
+Remove-ADGroupMember -Identity 'IT-Staff' -Members 'jdoe' -Confirm:$false
+Get-ADPrincipalGroupMembership -Identity 'jdoe'           # All groups a user belongs to
+
+# Computers
+Get-ADComputer -Filter { Name -like 'WS*' }               # Workstations matching pattern
+Get-ADComputer -Identity 'PC001' -Properties LastLogonDate, OperatingSystem
+Move-ADObject -Identity 'CN=PC001,CN=Computers,DC=corp,DC=local' `
+    -TargetPath 'OU=Workstations,DC=corp,DC=local'
+
+# OUs
+Get-ADOrganizationalUnit -Filter * | Select-Object Name, DistinguishedName
+New-ADOrganizationalUnit -Name 'Copenhagen' -Path 'OU=Offices,DC=corp,DC=local'
+
+# Domain info
+Get-ADDomain                                              # Domain details, PDC emulator, RID master etc.
+Get-ADDomainController -Filter *                          # All DCs
+Get-ADForest                                              # Forest-level info
+#+end_src
+
+* Network — NetTCPIP & NetAdapter
+:PROPERTIES:
+:DESCRIPTION: Interface config, routing, DNS, TCP connections — Windows networking via PS7
+:END:
+
+#+begin_src powershell
+# Adapters
+Get-NetAdapter                                            # All network adapters
+Get-NetAdapter | Where-Object { $_.Status -eq 'Up' }     # Only connected adapters
+Get-NetAdapter -Name 'Ethernet'                           # Specific adapter
+Set-NetAdapter -Name 'Ethernet' -Description 'LAN'       # Rename/describe
+Enable-NetAdapter -Name 'Wi-Fi'
+Disable-NetAdapter -Name 'Wi-Fi' -Confirm:$false
+Rename-NetAdapter -Name 'Ethernet 2' -NewName 'LAN'
+
+# IP Addressing
+Get-NetIPAddress                                          # All IP addresses on all interfaces
+Get-NetIPAddress -AddressFamily IPv4                      # IPv4 only
+Get-NetIPAddress -InterfaceAlias 'Ethernet'               # IPs on specific adapter
+New-NetIPAddress -InterfaceAlias 'LAN' `
+    -IPAddress '192.168.1.10' `
+    -PrefixLength 24 `
+    -DefaultGateway '192.168.1.1'
+Remove-NetIPAddress -InterfaceAlias 'LAN' -IPAddress '192.168.1.10' -Confirm:$false
+Set-NetIPAddress -InterfaceAlias 'LAN' -IPAddress '192.168.1.20' -PrefixLength 24
+
+# Routing
+Get-NetRoute                                              # Routing table
+Get-NetRoute -AddressFamily IPv4                          # IPv4 routes only
+New-NetRoute -DestinationPrefix '10.0.0.0/8' -InterfaceAlias 'LAN' -NextHop '192.168.1.254'
+Remove-NetRoute -DestinationPrefix '10.0.0.0/8' -Confirm:$false
+
+# DNS
+Get-DnsClientServerAddress                                # DNS server config per interface
+Set-DnsClientServerAddress -InterfaceAlias 'LAN' -ServerAddresses '8.8.8.8','8.8.4.4'
+Resolve-DnsName 'github.com'                              # DNS lookup (replaces nslookup)
+Resolve-DnsName 'github.com' -Type MX                    # Specific record type
+Clear-DnsClientCache                                      # Flush DNS cache
+
+# TCP connections
+Get-NetTCPConnection                                      # All TCP connections (replaces netstat)
+Get-NetTCPConnection -State Established                   # Active connections only
+Get-NetTCPConnection -LocalPort 443                       # Connections on a specific local port
+Get-NetTCPConnection -RemotePort 443 | Select-Object LocalAddress, RemoteAddress, State
+
+# Firewall
+Get-NetFirewallRule -DisplayName '*HTTP*'                 # Find firewall rules by name
+New-NetFirewallRule -DisplayName 'Allow HTTPS' -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
+Disable-NetFirewallRule -DisplayName 'Allow HTTPS'
+Remove-NetFirewallRule -DisplayName 'Allow HTTPS'
+#+end_src
+
+* DNS Server Module
+:PROPERTIES:
+:DESCRIPTION: Manage Windows DNS Server zones and records
+:END:
+
+# Requires: DNS Server role installed, or RSAT DNS Tools
+# Install RSAT: Add-WindowsCapability -Online -Name Rsat.Dns.Tools~~~~0.0.1.0
+
+#+begin_src powershell
+Import-Module DnsServer
+
+# Zones
+Get-DnsServerZone                                         # List all zones on local DNS server
+Get-DnsServerZone -ComputerName 'dc01'                    # Zones on a remote DNS server
+Add-DnsServerPrimaryZone -Name 'lab.local' -ReplicationScope 'Forest' -DynamicUpdate Secure
+Add-DnsServerSecondaryZone -Name 'lab.local' -ZoneFile 'lab.local.dns' -MasterServers '10.0.0.1'
+Remove-DnsServerZone -Name 'lab.local' -Confirm:$false
+
+# Resource records
+Get-DnsServerResourceRecord -ZoneName 'lab.local'                         # All records
+Get-DnsServerResourceRecord -ZoneName 'lab.local' -RRType 'A'             # A records only
+Get-DnsServerResourceRecord -ZoneName 'lab.local' -Name 'web01'           # Specific host
+
+Add-DnsServerResourceRecordA -ZoneName 'lab.local' -Name 'web01' -IPv4Address '10.0.0.10'
+Add-DnsServerResourceRecordCName -ZoneName 'lab.local' -Name 'www' -HostNameAlias 'web01.lab.local.'
+Add-DnsServerResourceRecordMX -ZoneName 'lab.local' -Name '@' -MailExchange 'mail.lab.local.' -Preference 10
+
+Remove-DnsServerResourceRecord -ZoneName 'lab.local' -RRType 'A' -Name 'web01' -Confirm:$false
+
+# Reverse lookup zones
+Add-DnsServerPrimaryZone -NetworkId '10.0.0.0/24' -ReplicationScope 'Forest'
+Add-DnsServerResourceRecordPtr -ZoneName '0.0.10.in-addr.arpa' -Name '10' -PtrDomainName 'web01.lab.local.'
+
+# Diagnostics
+Test-DnsServer -IPAddress '10.0.0.1' -ZoneName 'lab.local'               # Test a DNS server
+Get-DnsServerDiagnostics -ComputerName 'dc01'                             # Debug logging settings
+#+end_src
+
+* DHCP Server Module
+:PROPERTIES:
+:DESCRIPTION: Manage Windows DHCP Server scopes, leases, and reservations
+:END:
+
+# Requires: DHCP Server role installed, or RSAT DHCP Tools
+# Install RSAT: Add-WindowsCapability -Online -Name Rsat.DHCP.Tools~~~~0.0.1.0
+
+#+begin_src powershell
+Import-Module DhcpServer
+
+# Server-level
+Get-DhcpServerInDC                                        # DHCP servers authorized in AD
+Add-DhcpServerInDC -DnsName 'dc01.lab.local' -IPAddress '10.0.0.1'
+Get-DhcpServerSetting -ComputerName 'dc01'
+
+# Scopes
+Get-DhcpServerv4Scope -ComputerName 'dc01'                # List all IPv4 scopes
+Add-DhcpServerv4Scope -ComputerName 'dc01' `
+    -Name 'Office LAN' `
+    -StartRange '10.0.0.100' `
+    -EndRange '10.0.0.200' `
+    -SubnetMask '255.255.255.0' `
+    -State Active
+Set-DhcpServerv4Scope -ComputerName 'dc01' -ScopeId '10.0.0.0' -LeaseDuration '1.00:00:00'
+Remove-DhcpServerv4Scope -ComputerName 'dc01' -ScopeId '10.0.0.0' -Confirm:$false
+
+# Scope options (DNS, gateway)
+Set-DhcpServerv4OptionValue -ComputerName 'dc01' -ScopeId '10.0.0.0' `
+    -DnsDomain 'lab.local' `
+    -DnsServer '10.0.0.1' `
+    -Router '10.0.0.254'
+
+# Leases and reservations
+Get-DhcpServerv4Lease -ComputerName 'dc01' -ScopeId '10.0.0.0'           # Active leases
+Get-DhcpServerv4Lease -ComputerName 'dc01' -ScopeId '10.0.0.0' |
+    Where-Object { $_.AddressState -eq 'Active' }
+
+Add-DhcpServerv4Reservation -ComputerName 'dc01' `
+    -ScopeId '10.0.0.0' `
+    -IPAddress '10.0.0.50' `
+    -ClientId '00-11-22-33-44-55' `
+    -Description 'Printer-01'
+Remove-DhcpServerv4Reservation -ComputerName 'dc01' -ScopeId '10.0.0.0' -IPAddress '10.0.0.50'
+
+# Exclusions (reserve IPs outside the pool — statically assigned devices)
+Add-DhcpServerv4ExclusionRange -ComputerName 'dc01' -ScopeId '10.0.0.0' `
+    -StartRange '10.0.0.1' -EndRange '10.0.0.20'
+
+# Failover (high availability)
+Get-DhcpServerv4Failover -ComputerName 'dc01'
+Add-DhcpServerv4Failover -ComputerName 'dc01' -Name 'dc01-dc02-fo' `
+    -PartnerServer 'dc02' -ScopeId '10.0.0.0' -LoadBalancePercent 50
+#+end_src
+
+* ImportExcel
+:PROPERTIES:
+:DESCRIPTION: Read and write Excel files without Excel installed — community module
+:END:
+
+# Install: Install-Module -Name ImportExcel -Scope CurrentUser
+# No Excel installation required — pure .NET implementation.
+# Indispensable for generating reports demanded by management.
+
+#+begin_src powershell
+Import-Module ImportExcel
+
+# Export to Excel
+Get-Process | Select-Object Name, CPU, WorkingSet |
+    Export-Excel -Path 'C:\reports\processes.xlsx' -AutoSize -AutoFilter -BoldTopRow
+
+# Multiple sheets in one file
+$vmData      = Get-VM | Select-Object Name, PowerState, NumCpu, MemoryGB
+$hostData    = Get-VMHost | Select-Object Name, ConnectionState, Version
+$vmData   | Export-Excel -Path 'vcenter-report.xlsx' -WorksheetName 'VMs'   -AutoSize
+$hostData | Export-Excel -Path 'vcenter-report.xlsx' -WorksheetName 'Hosts' -AutoSize -Append
+
+# Read from Excel
+$data = Import-Excel -Path 'C:\data\servers.xlsx'
+$data | Where-Object { $_.Role -eq 'Web' }
+
+# Conditional formatting + chart
+Get-Service | Select-Object Name, Status |
+    Export-Excel -Path 'services.xlsx' `
+        -AutoSize `
+        -ConditionalText (
+            New-ConditionalText 'Stopped' -BackgroundColor Red -ConditionalTextColor White
+        )
+#+end_src
+
+* Useful One-Liners & Patterns
+:PROPERTIES:
+:DESCRIPTION: Practical patterns used frequently in sysadmin and netadmin scripting
+:END:
+
+#+begin_src powershell
+# Credential handling — don't hardcode passwords
+$cred = Get-Credential                                    # Interactive prompt
+$securePass = ConvertTo-SecureString 'P@ss' -AsPlainText -Force
+$cred = [PSCredential]::new('user', $securePass)          # Programmatic (for automation — store secrets properly)
+
+# Output conversion
+Get-Process | ConvertTo-Json                              # Serialize to JSON string
+'{"name":"web01"}' | ConvertFrom-Json                    # Deserialize JSON string to object
+Get-Process | ConvertTo-Csv -NoTypeInformation            # CSV
+Import-Csv -Path 'servers.csv'                            # Read CSV as objects — instantly pipelineable
+
+# Measure execution time
+Measure-Command { Get-ChildItem C:\ -Recurse }
+
+# Parallel port scan (PS7+)
+1..1024 | ForEach-Object -Parallel {
+    $port = $_
+    if ((Test-NetConnection -ComputerName 'target' -Port $port -WarningAction SilentlyContinue).TcpTestSucceeded) {
+        "Open: $port"
+    }
+} -ThrottleLimit 50
+
+# Recursively find files containing a string
+Get-ChildItem -Path 'C:\scripts' -Recurse -Filter '*.ps1' |
+    Select-String -Pattern 'TODO' |
+    Select-Object Path, LineNumber, Line
+
+# Tail a log file (like tail -f)
+Get-Content 'C:\logs\app.log' -Wait -Tail 50
+
+# Quick HTTP health check
+(Invoke-WebRequest -Uri 'https://myapp.local' -SkipCertificateCheck).StatusCode
+
+# Export any object to clipboard as CSV (useful for pasting into Excel manually)
+Get-Process | Select-Object Name, CPU | ConvertTo-Csv -NoTypeInformation | Set-Clipboard
+#+end_src
