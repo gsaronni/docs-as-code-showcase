@@ -1,0 +1,175 @@
+graph TB
+    subgraph EXTERNAL["External Networks"]
+        INTERNET[("Internet<br/>External Traffic")]
+        MPLS[("MPLS VPN<br/>MIL-PE053<br/>AS 64512")]
+    end
+
+    subgraph SECURITY["Security Layer - Naples/London"]
+        WAF["Imperva WAF<br/>Naples site owner<br/>Web Traffic Only<br/>80% of traffic"]
+        IPS["IPS London<br/>site owner<br/>ASA Firepower<br/>IPS Software"]
+    end
+
+    subgraph BORDER["Border Router - HA Pair"]
+        ASR1["MIL-RT900<br/>ASR9001<br/>10.80.2.49<br/>PRIMARY"]
+        ASR2["MIL-RT901<br/>ASR9001<br/>HA PAIR"]
+        ASR1 -.iBGP.- ASR2
+    end
+
+    subgraph FIREWALL["Firewall - Active/Standby"]
+        FW1["MIL-FW900-1<br/>ASA Firepower<br/>10.80.2.1<br/>ACTIVE"]
+        FW2["MIL-FW901-1<br/>ASA Firepower<br/>STANDBY"]
+        FW1 -.Failover.- FW2
+    end
+
+    subgraph FW_CONTEXTS["ASA Contexts"]
+        CTX_MGMT["MGMT<br/>Management<br/>OOB/BCK zones"]
+        CTX_DMZ["DMZ<br/>DMZ zones<br/>Public facing"]
+        CTX_FRONT["FRONTEND<br/>UNTRUSTED_U2S<br/>SERVICE_CTP"]
+        CTX_BACK["BACKEND<br/>TRUSTED_S2S<br/>EITO_PROD<br/>ITDCC<br/>IT_CSP_TRANSIT"]
+    end
+
+    subgraph CORE["Core L3 Switches - vPC Pair"]
+        NEX1["MIL-SW904<br/>Nexus 5612<br/>10.80.2.51<br/>vPC PRIMARY<br/>Priority 110"]
+        NEX2["MIL-SW905<br/>Nexus 5612<br/>10.80.2.52<br/>vPC SECONDARY<br/>Priority 100"]
+        NEX1 ===|"vPC Peer-Link<br/>Po56"| NEX2
+        NEX1 -.vPC Keepalive.- NEX2
+    end
+
+    subgraph VRFS["VRFs on Nexus"]
+        VRF_ITDCC["ITDCC<br/>192.168.25.x<br/>Main VRF"]
+        VRF_TRUST["TRUSTED_S2S<br/>192.168.24.x"]
+        VRF_UNTRUST["UNTRUSTED_U2S<br/>192.168.20.x"]
+        VRF_EITO["EITO_PROD<br/>192.168.22.x"]
+        VRF_DSL["DSL_DATA<br/>192.168.23.x"]
+        VRF_CSP["IT_CSP_TRANSIT<br/>192.168.28.x"]
+        VRF_LEG_PROD["LEGACY_PROD<br/>10.129.x"]
+        VRF_LEG_DMZ["LEGACY_DMZ<br/>10.129.166.x"]
+    end
+
+    subgraph LB["Load Balancers"]
+        F5_PRE["MIL-LB513<br/>F5 LTM<br/>PRE-PROD<br/>Standalone<br/>Po30<br/>VLANs: 11-14,506"]
+        F5_PROD1["MIL-LB514<br/>F5 LTM<br/>PRODUCTION<br/>HSRP Active<br/>Po40<br/>VLANs: 2,4,20-22,36-38,101"]
+        F5_PROD2["MIL-LB515<br/>F5 LTM<br/>PRODUCTION<br/>HSRP Standby<br/>Po41<br/>VLANs: 2,4,20-22,36-38,101"]
+        F5_PROD1 -.HSRP.- F5_PROD2
+    end
+
+    subgraph COMPUTE["Compute Infrastructure"]
+        VCENTER["MIL-ISE920<br/>vCenter<br/>THE Datacenter"]
+        PROXY["Squid Proxies<br/>Internet Access<br/>in vCenter"]
+        VMS["Virtual Machines<br/>W2012, W2016, RHEL<br/>Windows = mostly NostromoCare<br/><br/>⚠️ I hate sev-q304"]
+    end
+
+    subgraph LEGACY["Legacy Physical - Oracle Solaris on SPARC"]
+        subgraph CLUSTER1["Solaris Cluster 1 - Kelland App 1"]
+            SPARC1["Node 1<br/>SPARC Server<br/>Solaris 5.10/5.11<br/>Global Zone +<br/>5-7 Non-Global Zones"]
+            SPARC2["Node 2<br/>SPARC Server<br/>Solaris 5.10/5.11<br/>Global Zone +<br/>5-7 Non-Global Zones"]
+            SPARC3["Node 3<br/>SPARC Server<br/>Solaris 5.10/5.11<br/>Global Zone +<br/>5-7 Non-Global Zones"]
+        end
+        subgraph CLUSTER2["Solaris Cluster 2 - Kelland App 2"]
+            T701["MIL-SRV-T701<br/>SPARC T7<br/>Solaris 5.10/5.11<br/>Global Zone +<br/>5-7 Non-Global Zones"]
+            T702["MIL-SRV-T702<br/>SPARC T7<br/>Solaris 5.10/5.11<br/>Global Zone +<br/>5-7 Non-Global Zones"]
+            T703["MIL-SRV-T703<br/>SPARC T7<br/>Solaris 5.10/5.11<br/>Global Zone +<br/>5-7 Non-Global Zones"]
+        end
+    end
+
+    subgraph MGMT["Management Network"]
+        MGMT_NET["FD_mgmt VRF<br/>10.80.2.32/28<br/>192.168.64.x"]
+        OOB["OOB Network<br/>VLAN 609<br/>198.51.100.1/25"]
+    end
+
+    INTERNET -->|"Web 80/443"| WAF
+    INTERNET -->|"Non-Web"| IPS
+    WAF --> IPS
+    
+    IPS --> ASR1
+    IPS --> ASR2
+    
+    MPLS <-->|"BGP Peering<br/>Multiple VRFs"| ASR1
+    MPLS <-->|"BGP Peering"| ASR2
+    
+    ASR1 -->|"OSPF<br/>Multiple VRFs"| FW1
+    ASR2 --> FW2
+    
+    FW1 --> CTX_MGMT
+    FW1 --> CTX_DMZ
+    FW1 --> CTX_FRONT
+    FW1 --> CTX_BACK
+    
+    CTX_MGMT -->|"Po90/91"| NEX1
+    CTX_DMZ --> NEX1
+    CTX_FRONT --> NEX1
+    CTX_BACK --> NEX1
+    
+    FW2 --> NEX2
+    
+    NEX1 --> VRF_ITDCC
+    NEX1 --> VRF_TRUST
+    NEX1 --> VRF_UNTRUST
+    NEX1 --> VRF_EITO
+    NEX1 --> VRF_DSL
+    NEX1 --> VRF_CSP
+    NEX1 --> VRF_LEG_PROD
+    NEX1 --> VRF_LEG_DMZ
+    
+    NEX1 ==>|"LACP"| F5_PRE
+    NEX1 ==>|"LACP"| F5_PROD1
+    NEX1 ==>|"LACP"| F5_PROD2
+    
+    NEX2 ==>|"LACP"| F5_PRE
+    NEX2 ==>|"LACP"| F5_PROD1
+    NEX2 ==>|"LACP"| F5_PROD2
+    
+    F5_PRE --> VCENTER
+    F5_PROD1 --> VCENTER
+    F5_PROD2 --> VCENTER
+    
+    F5_PRE --> SPARC1
+    F5_PRE --> SPARC2
+    F5_PRE --> SPARC3
+    F5_PROD1 --> T701
+    F5_PROD2 --> T702
+    F5_PROD1 --> T703
+    
+    NEX1 --> VCENTER
+    NEX2 --> VCENTER
+    
+    NEX1 --> SPARC1
+    NEX1 --> SPARC2
+    NEX1 --> SPARC3
+    NEX1 --> T701
+    NEX1 --> T702
+    NEX1 --> T703
+    
+    NEX2 --> SPARC1
+    NEX2 --> SPARC2
+    NEX2 --> SPARC3
+    NEX2 --> T701
+    NEX2 --> T702
+    NEX2 --> T703
+    
+    VCENTER --> VMS
+    VCENTER --> PROXY
+    
+    MGMT_NET -.Management.-> ASR1
+    MGMT_NET -.Management.-> FW1
+    MGMT_NET -.Management.-> NEX1
+    MGMT_NET -.Management.-> F5_PRE
+    OOB -.OOB Access.-> VCENTER
+    
+    classDef security fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    classDef border fill:#4dabf7,stroke:#1971c2,color:#fff
+    classDef firewall fill:#ff922b,stroke:#d9480f,color:#fff
+    classDef core fill:#51cf66,stroke:#2f9e44,color:#fff
+    classDef loadbalancer fill:#9775fa,stroke:#6741d9,color:#fff
+    classDef compute fill:#ffd43b,stroke:#f08c00,color:#000
+    classDef legacy fill:#868e96,stroke:#495057,color:#fff
+    classDef mgmt fill:#20c997,stroke:#0ca678,color:#fff
+    
+    class WAF,IPS security
+    class ASR1,ASR2 border
+    class FW1,FW2,CTX_MGMT,CTX_DMZ,CTX_FRONT,CTX_BACK firewall
+    class NEX1,NEX2,VRF_ITDCC,VRF_TRUST,VRF_UNTRUST,VRF_EITO,VRF_DSL,VRF_CSP,VRF_LEG_PROD,VRF_LEG_DMZ core
+    class F5_PRE,F5_PROD1,F5_PROD2 loadbalancer
+    class VCENTER,PROXY,VMS compute
+    class SPARC1,SPARC2,SPARC3,T701,T702,T703 legacy
+    class MGMT_NET,OOB mgmt

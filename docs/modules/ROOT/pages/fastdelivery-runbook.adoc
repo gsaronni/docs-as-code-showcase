@@ -1,0 +1,3657 @@
+= Seegson FastDelivery's Documentation: Day to day activities
+Gabriele Saronni <gabriele.saronni@weyland-yutani.example>; NOC Engineer <noc.engineer@weyland-yutani.example>
+1.8.6, 19/03/2025
+:title-page:
+:toc: 
+:sectnums:
+:toclevels: 2
+:toc-title: Seegson FastDelivery Activities
+:icons: font
+:source-highlighter: rouge
+:title-logo-image: image:fastdelivery-ducks.jpg[pdfwidth=3in,align=center]
+ifndef::env-site[:imagesdir: ../images]
+
+<<<
+
+.Revision history
+[cols="10h,12h,10h,~"]
+|===
+|Version |Date |Authors |Description
+
+|1.8 |13/05/2024 |{author_2} |Merged Fastdelivery's wiki
+|1.8.1 |23/05/2024 |{author} |Restore All Services On Servers
+|1.8.1.1 |11/07/2024 |{author_2} |Added software versions
+|1.8.1.2 |12/12/2024 |{author_2} |Updated Disk Space table references
+.3+.^|1.8.2 .3+.^|16/12/2024 .3+.^|{author_2} d|Added Decommissioning steps d|Moved CM under ASA d|Updated Project Owners table
+|1.8.3 |27/01/2025 |{author_2} |Expanded decommission, added Assyst contact, refined sev-q282 cert
+|1.8.3.1 |30/01/2025 |{author_2} |Finally found how report.apolloreport works
+|1.8.3.2 |03/02/2025 |{author_2} |pfx extraction of pem and key file
+|1.8.4 |25/02/2025 |{author} |certificate error fix 
+|1.8.5 |25/02/2025 |{author} | DNS decommision on seegson.example
+|1.8.6 |19/03/2025 |{author_2} |SunOS commands reference
+|1.8.7 |26/06/2025 |{author_2} |Updated certificates link
+|===
+
+<<<
+
+== Network Device Table
+
+.Partial Device Table
+|===
+|Hostname |IP |Management IP |Description 
+
+|MIL-TS90 |10.20.123.131 |10.30.123.44 |Terminal Server
+
+|MIL-FW900 chassis |10.40.123.203 | |Firewall DC F&D - active
+|MIL-FW901 chassis |10.40.123.134 | |Firewall DC F&D - standbyF
+|MIL-FW900 |10.40.123.141 | .2+.^|ASA FirePower
+|MIL-FW901 |10.40.123.142 | 
+|MIL-FW900 MGMT | |10.30.123.36 .8+.^|ASA Firepower Contextes
+|MIL-FW901 MGMT | |10.30.123.37 
+|MIL-FW900 DMZ | |10.30.123.38 
+|MIL-FW901 DMZ | |10.30.123.39 
+|MIL-FW900 BACKEND | |10.30.123.40 
+|MIL-FW901 BACKEND | |10.30.123.41 
+|MIL-FW900 FRONTEND | |10.30.123.42 
+|MIL-FW901 FRONTEND | |10.30.123.43 
+
+|MIL-RT900 |10.40.123.135 |10.30.123.49 .4+.^|Router DC F&D 
+|MIL-RT901 |10.40.123.136 |10.30.123.50 
+|MIL-SW904 |10.40.123.139 |10.30.123.51 
+|MIL-SW905 |10.40.123.140 |10.30.123.52 
+
+|MIL-ISE906 | |10.30.126.135 .2+.^|Hardware ISE 
+|MIL-ISE907 | |10.30.126.136 
+|MIL-ISE909 | |10.30.207.7 .2+.^|ISE Application 
+|MIL-ISE910 | |10.30.207.8 
+
+|MIL-LB513 | |10.30.126.165 |F5 Pre bilanciatore standalone
+|MIL-LB514 | |10.30.126.175 |F5 Pro bilanciatore standby
+|MIL-LB515 | |10.30.126.176 |F5 Pro bilanciatore active
+|mil-obm-lb1 | |10.40.225.126 |Virtualized F5 Pro bilanciatore active 
+|mil-obm-lb2 | |10.40.225.123 |Virtualized F5 Pro bilanciatore standby
+
+|sev-x100| |10.50.166.100 |Proxy Active
+|sev-x222 | |10.50.166.102 |Proxy Standby 
+
+|VIP for system admin | |10.50.166.101:8080 |Proxy VIP 
+
+|mil-srv-x008 | |10.30.207.5 |DNS master 
+|sev-x101 | |10.50.166.21 .2+.^|DNS public/external
+|sev-x102 | |10.50.166.22
+|sev-x103 | |10.50.169.21 .2+.^|DNS private/internal
+|sev-x104 | |10.50.169.22 
+
+|sev-x215 | |10.50.164.114 |Certificates dump
+
+|mil-srv-x001 | |10.30.207.78 |Backup server
+
+|===
+
+<<<
+
+== ASA Firepower Firewall
+
+.Cisco ASA
+|===
+|DNS       |IP             |Model          |ASA Version |FXOS Version | Description
+
+|MIL-FW900 |10.40.123.203 .2+.^|Firepower 4110 .2+.^|9.18.4.29 .2+.^|2.12(1.172)   |Active
+|MIL-FW901 |10.40.123.134    |Passive
+
+|===
+
+.Support
+https://mycase.cloudapps.cisco.com/case[Cisco Case] +
+https://www.cisco.com/c/en/us/td/docs/security/firepower/fxos/compatibility/fxos-compatibility.html[Cisco compatibility matrix]
+
+=== Configuring ACL
+
+* This can be done with the private IP or a network plus the subnet mask  
+* To get the Private IP from powershell do: `nslookup <PublicIPaddress>` 
+* Check from where that IP will arrive:
+** From the correct MIL-FW900-1 context run: `show route <IPaddress>`
+
+.Example:
+```Cisco
+MIL-FW900-1/BACKEND/pri/act# show route 198.19.32.144
+Routing Table: BACKEND
+Routing entry for 198.19.32.0 255.255.254.0, supernet
+Known via "static", distance 1, metric 0
+Routing Descriptor Blocks:
+-192.168.25.1, via ITDCC
+Route metric is 0, traffic share count is 1
+```
+
+NOTE: This specific example was done from BACKEND context because the VFR (Virtual routing and forwarding) routes through that context
+
+==== To Add an IP
+> Also called "an opening" or "un'apertura"
+
+* Log into MIL-FW900-1
+* Check the IP source to know which context will be
+* Run the following:
+
+```Cisco
+change context <contextName>
+configuration terminal
+access-list GLOBAL_ACL extended permit <protocol> host <sourceIP> host <destinationIP> eq <port>  
+access-list GLOBAL_ACL extended permit tcp host X.X.X.X host X.X.X.X eq https  
+write
+```
+
+WARNING: Has to be repeated in needed contexts
+
+==== To Add Using a Network
+* When the mask is provided run: 
+** `access-list GLOBAL_ACL extended permit tcp 10.60.116.0 255.255.252.0 host 10.50.171.43 eq 443`  
+** `access-list GLOBAL_ACL extended permit <protocol> <sourceIP> <sourceMask> host <destinationIP> eq <port>`
+
+==== To Delete an ACL
+* Search for the ACL you need to erase using: `show access-list | include x.x.x.x`
+* Put `no` in front of the line. 
+** Example: `no access-list GLOBAL_ACL extended permit tcp 10.60.116.0 255.255.252.0 host 10.50.171.43 eq 443`
+
+.In Case of Errors check:
+* the contexts routing table 
+* the Network Scheme
+* if all the involving teams where contacted, such as the Naples site team
+
+==== ACL using object-group
+* There are some cases where you will add the source IP to an `object-group` that compress all the destination IPs. 
+** Example: `access-list GLOBAL_ACL extended permit tcp host 10.61.181.117 `object-group objN-MgmT-Net eq 22`  
+** In this case we have a server that wants to reach an IP inside MGMT context where there is an `object-group` containing all the IPs `object-group network objN-MgmT-Net`
+* To search an `object-group` run `show object-group | include <keyWordOrIp>` from the needed context, then use the `<line number>` to find the object-group.
+
+IMPORTANT: Remember to search in all contextes.
+
+==== Access Control List Additional Info
+NOTE: You can find additional informations https://www.Cisco.com/c/en/us/td/docs/security/asa/asa96/configuration/firewall/asa-96-firewall-config/access-acls.html#ID-2069-0000011a[here]
+
+* An e-mail request will start the procedure
+* If the `object-group` is not mentioned it has to be retrieved
+** From `10.30.207.78 2022/MIL-FW900` most recent backup run `grep <ipAddress/KeyWord> 2022/MIL-FW900/<mostRecent>`
+** From `10.30.207.78 2022/MIL-FW900` most recent backup open it with mobaXterm or download it and with `ctrl+f <ipAddress/KeyWord>`
+* Configure the ACL inside the DMZ context like explained above with correct `object-group`, in the example is objN-VPN-Kelland and the correspondent IP
+** Example: `access-list GLOBAL_ACL extended permit tcp `object-group` *objN-VPN-Kelland* host x.x.x.x eq https`
+
+TIP: In case you need to find the Private IP or just want to corroborate info run from powershell while in VPN Seegson and logged-in ASA `nslookup <FQDN>` (Fully Qualified Domain Name)
+
+CAUTION: The inverted flux is not permitted: `access-list GLOBAL_ACL line 5493 extended permit tcp host 10.50.170.39 `object-group` objN-VPN-Kelland eq https (hitcnt=0) 0x4b4e153c`
+
+=== Block IP from Firewall
+. Connect to MIL-FW900 firewall via `ssh 10.40.123.141`
+. Change context to DMZ: `MIL-FW900-1/MGMT/sec/act# changeto context DMZ`
+. Create group with the objects that needs to be blocked:
+
+```Cisco
+MIL-FW900-1/DMZ/sec/act# configuration terminal
+MIL-FW900-1/DMZ/sec/act(config)# object-group network CNG_DD_MM_YYYY
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# network-object host x.x.x.x
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# network-object host y.y.y.y
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# exit
+```
+
+[start=4]
+. Select macro-group IP_DENY_container: (config-network-object-group)
+* `object-group network IP_DENY_container`
+. Add the blocked IP group to the macro-group: (config-network-object-group)
+* `group-object CNG_DD_MM_YYYY`
+. Verify: 
+* Check if IPs are added correctly to the object-group: `show object-group id CNG_05_04_2022`
+* Check if the object-group is in the IP_DENY_container: 
+** `show object-group id IP_DENY_container | i CNG_DD_MM_YYYY`
+. Save the configuration: `write memory`
+
+.Example
+```Cisco
+MIL-FW900-1/DMZ/sec/act(config)# object-group network CNG_04_03_2021
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# network-object host 198.51.100.1
+network-object host 198.51.100.2
+network-object host 198.51.100.3
+network-object host 198.51.100.4
+network-object host 198.51.100.5
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# exit
+MIL-FW900-1/DMZ/sec/act(config)# object-group network IP_DENY_container
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# group-object CNG_04_03_2021
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# exit
+MIL-FW900-1/DMZ/sec/act(config)# show object-group id IP_DENY_container | i CNG_04_03_2021
+object-group network IP_DENY_container
+ group-object CNG_04_03_2021
+```
+
+=== Communication Matrix (CM)
+
+[cols="25%,60%"]
+.IP owning table
+|===
+|Context |IP class
+
+.2+.^|DMZ 
+m|10.30.0.0 255.255.0.0
+m|10.50.0.0 255.255.0.0
+
+
+
+|===
+
+[cols="25%,60%"]
+.VRF table
+|===
+|Context |Virtual Routing Forwarding
+
+|ASA Firepower |DSL_DATA
+
+.2+.^|Frontend 
+|UNTRUSTED_U2S 
+|SERVICE_CTP
+
+.4+.^|Backend 
+|EITO_PROD 
+|IT_CSP_TRANSIT 
+|TRUSTED_S2S 
+|ITDCC
+
+|===
+
+> Image example needed
+
+. what lines are mine? Are always the last ones highlighted?
+==== Is it from the inside or the outside?
+
+. If the VRF is given: Check the VRF table
+.. If it's not given, start from Backend: `show route <destinationIP>`
+
+```
+MIL-FW900-1/BACKEND/sec/act# sh route 198.51.100.6
+
+Routing Table: BACKEND
+Routing entry for 198.51.100.7 255.255.255.240
+  Known via "static", distance 1, metric 0
+  Routing Descriptor Blocks:
+  * 192.168.28.1, via IT_CSP_TRANSIT
+      Route metric is 0, traffic share count is 1
+```
+
+. what questions do I need?
+. Log into ASR 
+.. Look for the prefix set: `show rpl prefix-set <VRF_NAME>`
+. Log into Nexus 5k
+.. Look for the prefix set: `show vrf <VRF_NAME>`
+
+=== Essentials Firewall Actions 
+.Verify the Connection
+* Type: `show connection all | i <target IP>`
+* Verify Inbound connection flag
+
+.To Recover the VIP
+* From powershell run `nslookup <FQDN>` Ex: `nslookup it.infobyip.com`
+* Log into MIL-FW900-1 and from DMZ context run `show nat | i <publicIP>` to fetch the private IP used by F5
+
+.Access Chassis from CLI to check physical interfaces
+* Connect through SSH to the IP `10.40.123.203/4` or using the Chassis session from MobaXterm access to the ASA Chassis
+* Once inside run the following commands:
+** `connect fxos` && `sh int e1/5` (or any desired interface)
+
+.Test Connectivity of ACL implementated
+
+* Inside ASA from the needed context launch the command `ping` and enter
+* From the choices type `y`to proceed
+* Insert the target IP
+* Insert destination port
+* The option will appear Specify source type `y`to proceed
+* Insert the source IP then press enter 3 times to proceed with the test 
+
+```Cisco
+MIL-FW900-1/DMZ/pri/act# ping
+TCP Ping [n]: y
+Interface: DMZ-FRONT
+Target IP address: 10.62.214.30
+Destination port: [80] 22
+Specify source? [n]: y
+Source IP address: 10.63.62.24
+Source port: [0]
+Repeat count: [5]
+Timeout in seconds: [2]
+Type escape sequence to abort.
+Warning! Specified source interface DMZ-FRONT is different
+than expected source interface LEGACY-PRE!
+Sending 5 TCP SYN requests to 10.50.170.30 port 22
+from 10.61.18.24, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 1/1/1 ms
+```
+* For the `packet-tracer` command
+** Type input, insert the interface, the protocol, then the IP source, select the port number or protocol, Enter the destination address, and select the port number or protocol. as the example below:
+
+```Cisco
+MIL-FW900-1/DMZ/pri/act# packet-tracer input DMZ-FRONT tcp 10.70.19.24 7194 10.71.214.30 22 detailed
+Result:
+input-interface: DMZ-FRONT
+input-status: up
+input-line-status: up
+```
+
+=== Firewall capture
+WARNING: Mind disk space, when using `capture`, with `max buffer`
+
+. Connect to the firewall `MIL-FW900-1 10.40.123.141`
+. Switch to needed context Ex: `MIL-FW900-1/MGMT/sec/act# changeto context DMZ`
+. Run: `capture <name> type raw-data {trace buffer | circular-buffer} interface <int> match <protocol> <sourceIP> <destinationIP> <port>`
+
+.Example output
+```Cisco
+capture ADE type raw-data interface APPLICATION-BACK circular-buffer [Capturing * 524259 bytes]
+match tcp host 10.50.174.17 any4 eq 27017
+```
+
+TIP: For more info on Using Packet Capture to troubleshoot: https://community.Cisco.com/t5/security-documents/asa-using-packet-capture-to-troubleshoot-asa-firewall/ta-p/3256889[MIL-FW900-1 Firewall]
+
+=== NAT in ASA FirePower
+
+TIP: For any doubts consult https://www.practicalnetworking.net/stand-alone/cisco-asa-nat/#autonat[NAT Configuration Guide]
+
+==== AUTO NAT
+* Create an `object network` for a private IP inside a NAT
+* Check from which interface comes the IP `show route X.X.X.X`
+* From `Configuration terminal` run:
+* Create the object network as shown in the example below: 
+
+.Example: from `10.50.171.76` map a `203.0.113.115`
+```
+conf t 
+object network obj-10.50.171.76 
+host 10.50.171.76
+```
+* Then configure the nat inside the object network 
+```
+nat (LEGACY-PRE,DSL_DATA) static 203.0.113.115 no-proxy-arp
+```
+
+IMPORTANT: Remember to check and update the IP table and CM if it's available
+
+==== Type 2 NAT
+
+.Create an `object-network` for a private IP inside a NAT
+```Cisco
+configuration terminal 
+MIL-FW900-1/DMZ/pri/act(config)# object network host-10.30.173.9
+MIL-FW900-1/DMZ/pri/act(config-network-object)# host 10.30.173.3
+exit
+```
+
+.Localize the VRF of origin and destination
+```
+MIL-FW900-1/DMZ/pri/act(config)# nat (internal interface, external interface) source static host-198.51.100.8 host-198.51.100.8 destination static host-198.51.100.9 host-10.30.173.9
+```
+
+.Define a specific NAT rule for translating source and destination IP addresses
+```
+nat (internal interface, external interface) source static host-198.51.100.8 host-198.51.100.8 destination static host-198.51.100.9 host-10.30.173.9
+```
+
+In summary, the command configures a NAT rule that keeps the source IP address unchanged (198.51.100.8) for outbound traffic from the "internal interface." + 
+For inbound traffic through the "external interface," it translates the destination IP address 198.51.100.9 to 10.30.173.9.
+
+==== Delete an existing NAT
+
+* Select the needed network object:
+** MIL-FW900-1/DMZ/pri/act(config)# object network obj-10.50.171.153
+* Inside `conf t` run one of this 3 examples: 
+```
+MIL-FW900-1/DMZ/pri/act(config)# no object network obj-<Private IP>
+MIL-FW900-1/DMZ/pri/act(config)# no nat static <Public IP>
+MIL-FW900-1/DMZ/pri/act(config)# no nat (LEGACY*PRE,DSL_DATA) static <Public IP> no-proxy-arp(optional)
+```
+=== Failover
+
+NOTE: Right now primary is in standby
+
+|===
+|IPS Primary |IPS Secondary
+
+|MIL-IX505 |MIL-IX503
+|MIL-SEC-FTD01 |MIL-SEC-SOU01
+m|MIL-FW900-1/sec/act# m|MIL-FW900-1/pri/stby#
+|===
+
+. Connect to the devices shown above
+. Change context to System: `change context system`
+. Verify: `show failover state`
+. From the standby run: `failover active`
+. Wait to reconnect and run `show failover state`
+
+=== Adding Routes on the ASA
+
+* To add a Route in the Firewall use the following command `route if_name dest_ip mask gateway_ip [ distance ]`
+** Example: `route ITDCC 198.19.148.192 255.255.255.224 192.168.25.1 1`
+* Sometimes you will need to add the route from the Backend context up to DMZ. The following example shows the established routes coming from the ITDCC VRF in order:
+
+```
+From VRF to Backend
+route ITDCC X.X.X.X (destination IP) Y.Y.Y.Y (subnet mask) 192.168.25.1 1
+From Frontend to Backend -> This is established in the FE context
+route FRONT-BACK X.X.X.X (destination IP) Y.Y.Y.Y (subnet mask) 192.168.65.3 1
+From Frontend to DMZ -> This is configured in the DMZ context
+route DMZ-FRONT X.X.X.X (destination IP) Y.Y.Y.Y (subnet mask)  192.168.64.3 1
+```
+
+NOTE: The VRF can vary according to what is indicated in the mail/request or the routing in the ASR 9000
+
+=== Change logging server
+
+IMPORTANT: This has to be done in all contexts, beware of the specific interface for each context
+
+* Search for the needed interface where the configuration is stablished 
+* Add the route using the command known
+* Go inside the Configuration Terminal, and then direct yourself into the interface
+* Once in there use the command: `logging host interfaceName Destination IP protocol/port` 
+
+.Example:
+```
+MIL-FW900-1/MGMT/sec/act# route FDmgmt-MGMT 10.40.213.22 255.255.255.255 10.30.123.33 1
+MIL-FW900-1/MGMT/sec/act# conf t
+MIL-FW900-1/MGMT/sec/act(config)# interface Port-channel1.2600
+MIL-FW900-1/MGMT/sec/act(config-if)#
+logging host FDmgmt-MGMT 10.40.213.22 17/12514
+wr
+```
+
+<<<
+
+== ASR 9001
+
+.Cisco ASA
+|===
+|DNS |IP |Device |IOS XR |ROM
+
+|MIL-RT900 |10.40.123.135 .2+.^|Cisco ASR 9001 .2+.^|6.4.2 .2+.^|3.04
+|MIL-RT901 |10.40.123.136 
+
+|===
+
+.Support
+https://mycase.cloudapps.cisco.com/case[Cisco Case]
+
+=== Add route to existing prefix
+Verify the configuration of the VRF: `show run vrf UNTRUSTED_U2S`
+
+.To configure the VRF
+```
+configuration terminal
+vrf context UNTRUSTED_U2S
+ip route X.X.X.X/X Vlan<id> IP next-hop address in format i.i.i.i
+```
+
+NOTE: You don't need to go into 'conf t' to add or remove the routes
+
+[cols="15%,90%"]
+|===
+|prefix  |cmd
+
+|see     |`show rpl prefix-set`
+|add     |`edit prefix-set pfx_ITDCC_fromPE inline add "198.19.145.32/27 le 32"`
+|remove  |`edit prefix-set pfx_ITDCC_fromPE inline remove "198.19.145.32/27 le 32"`
+|===
+
+> When PE is source: From PE // +
+> When PE is destination: To PE
+
+===  Verifying the subnet of the network to add in the prefix
+* Insert the IP in the following https://ccp.seegson.example/find/network[Tool]
+* The result will indicate both the network and the subnet. 
+* If subnet on CCP tool is marked with:
+
+```
+GDC Dedicated Seegson is equal to ITDCC
+GDC Internal Shared - SEEG is equal to EITOPROD
+```
+
+=== Verifying Reachability
+
+.Use the following commands to verify routing exchange and reachability informations in Border Gateway Protocol (BGP)
+|===
+|Input Command                                            |Command Description
+
+|show route                                               |Shows information about the routing table 
+|sh bgp all unicast                                       |Displays information about the BGP routing table entry
+|show bgp ipv4 unicast 10.40.227.6                       |Displays information about the BGP routing table entry for the specific IP address
+|show bgp vrf ITDCC neighbors                             |Displays information about BGP neighbors within a specific VRF
+|show bgp vrf ITDCC neighbors 10.72.37.1 received routes |Displays configuration information and statistics for BGP4 neighbors of the device for a virtual routing and forwarding (VRF) instance
+|sh bgp route + rpl_CE-PE_vrf-XXXX-IN/OUT                 |Displays information about  the current BGP routing state and the paths available for routing traffic through the network
+|===
+
+NOTE: Additional Info regarding https://docs.ruckuswireless.com/fastiron/08.0.50/fastiron*08050*commandref/GUID*B1F2522E*8575*47C6*9591*8D6966165ED9.html[BGP VRF]
+
+=== Useful Commands 
+
+|===
+|Input Command                                     |Command Description
+
+|`show tech-support bcdl`                            |Displays technical support information for the BCDL module.
+|`show bdcl consumers`                               |Shows information about BDCL (Block Distributed Control Loop) consumers.
+|`show process blocked location all`                 |Shows all blocked processes and their locations.
+|`show bdf session`                                  |Displays information about the BDF (Binary Data Format) sessions.
+|`show bdf session detail`                           |Shows detailed information about the BDF (Binary Data Format) sessions.
+|`show bgp nei 198.51.100.10`                              |Displays BGP (Border Gateway Protocol) neighbors for the specified IP.
+|`show bgp vrf <name> nei 198.51.100.11`                  |Displays BGP neighbors for the specified VRF (Virtual Routing and Forwarding).
+|`show route bgp`                                    |Shows BGP (Border Gateway Protocol) routes.
+|`bgp auto-policy-soft-reset disable`                |Disables automatic soft reset for BGP.
+|`no bgp auto-policy-soft-reset disable`             |Enables automatic soft reset for BGP.
+|`bgp graceful-restart`                              |Enables graceful restart for BGP.
+|`no bgp graceful-restart`                           |Disables graceful restart for BGP.
+|`show bgp neighbor 10.73.101.1 config`               |Displays the configuration of the BGP neighbor with the specified IP.
+|`show bgp process`                                  |Shows information about the BGP process.
+|`clear bgp ipv4 multicast dampening 172.20.0.0/16`  |Clears BGP multicast dampening for the specified IPv4 address range.
+|`clear bgp external`                                |Clears external BGP (Border Gateway Protocol) sessions.
+|`clear bgp vrf vrf_A nexthop performance stats`     |Clears the performance statistics for the specified VRF nexthop.
+|`show bgp vpnv4 unicast vrf`                        |Displays BGP VPNv4 (Virtual Private Network version 4) unicast for the VRF.
+|===
+
+<<<
+
+== ISE
+
+.Cisco UCS-ISE
+|===
+|DNS |IP |Description
+
+|MIL-ISE906 |10.30.126.135 .2+.^|Cisco Integrated Management Controller
+|MIL-ISE907 |10.30.126.136 
+
+|MIL-ISE909 |10.30.207.7 |Active node
+|MIL-ISE910 |10.30.207.8 |Secondary node
+|===
+
+.Support
+https://mycase.cloudapps.cisco.com/case[Cisco Case]
+
+=== Password Change and Reset in Cisco ISE
+
+==== Admin Password 
+
+[.lead]
+In Cisco ISE the WebGUI and CLI admin username and passwords are separate. + 
+
+In order to change the passwords you can use the following methods:
+
+TIP: When doing the CLI password keep a shell of both nodes `MIL-ISE909/10` in order to avoid login issues.
+
+* Run `password`. The CLI password is unique to each ISE node but we usually put the same
+* WebGUI password can be changed from CLI with `application reset-passwd ise <username-here>`. 
+
+.Example:
+```config
+MIL-ISE909/admin# password
+Enter old password:
+Enter new password:
+% Password must contain at least one digit.
+Enter new password:
+Confirm new password:
+MIL-ISE909/admin# application rese
+reset-config  reset-passwd
+MIL-ISE909/admin# application reset-passwd ise admin
+Enter new password:
+Confirm new password:
+
+
+Password reset successfully.
+
+MIL-ISE909/admin#
+```
+
+Reset the password from another account
+.Example:
+```cfg
+MIL-ISE909/zzyourUser# conf t
+MIL-ISE909/zzyourUser(config)# username admin password plain <NewStrongPassword> role admin
+```
+
+CAUTION: The WebGUI password must be reset on the Primary PAN, this password is then synchronised to all ISE nodes.
+
+.WebGUI:
+* Navigate to `Administration` -> `System` -> `Admin Access` -> `Administrators` -> `Admin Users`
+
+IMPORTANT: Has to be done in **both** Cisco devices
+
+==== ISE GUI Password Recovery Mechanism
+
+. Use the CLI admin account to log in on the console.
+
+NOTE: Remember that the console admin account is different than the web GUI admin account. They have the same username but can have different passwords.
+
+[start=2]
+. From the command prompt, use the `application reset-passwd ise admin` command to set a new web GUI admin password.
+. Prompt to reset password appears as shown in this image:
+
+image:imageISE.png[image,width=279,height=230]
+
+[start=4]
+. Enter the new password as required.
+. To confirm that the new password works, use the new password to log in to GUI.
+
+==== Personal Account Password zz<youruser>
+
+* Go to ISE `10.30.207.7` log in with the admin credentials in the GUI
+* Open `Administration`
+* Go to `Identities`
+* Search the needed username 
+* Click it -> edit -> create the new password
+
+==== Resetting a forgotten ISE Password
+
+If you have forgotten the ISE CLI password you can only reset this by booting from the ISE DVD/ISO
+
+.Select option 3 or 4
+image::passwordReset.png[image,width=298,height=114]
+
+.Select option [1] Recover Administrator Password
+image::passwordReset2.png[image,width=198,height=76]
+
+* Select Admin account and enter the new password
+* Save changes and exit to reboot the ISE node
+
+=== Configure Repository mil-srv-x001 on ISE 
+
+* Cause: 90gg password expire
+* For more information. Refer to https://www.cisco.com/c/en/us/support/docs/security/identity-services-engine-software/215348-how-to-configure-repository-on-identity.html[Cisco Documentation]
+
+WARNING: ISE Alarm: Info: Scheduled report export failed. Unable to copy the exported file to repository.
+
+* Fix: Change mil-srv-x001 password
+** Update inventory 
+** Update **both** ISE devices. 
+
+
+```
+Connect to repository MIL-SRV-X001
+MIL-ISE909/admin# configure terminal
+MIL-ISE909/admin(config)# repository MIL-SRV-X001
+  url sftp://10.30.207.78/app/usrbck/iseusrbck
+  user fpusrbck password plain <putThePlainPswHere>
+```
+
+WARNING: Host key of the server must be added using 'crypto host_key add' exec command before sftp repository can be used.
+
+```
+MIL-ISE909/admin(config-Repository)#exit
+MIL-ISE909/admin# crypto host_key add host MIL-SRV-X001
+host key fingerprint added
+Operating in CiscoSSL FIPS mode
+
+# Host MIL-SRV-X001 found: line 1
+MIL-SRV-X001 RSA SHA256:<host-key-fingerprint>
+```
+
+* If the alarm keeps arriving check ISE GUI. Go to Administration -> System -> Maintenance -> Repository.
+* Select the repository `MIL-SRV-X001` and click edit. Update the psw.
+
+> _Don't ask me why they do not use ssh key exchange_
+
+=== Make a Bundle in Cisco ISE
+* Go to the `10.30.207.7` address log in with the admin credentials:
+** Has to be done in **both** nodes
+** Choose an encryption key bundle719
+** Choose key's longevity
+* The saved logs are:
+** Debug logs
+** Local logs
+** Monitoring and reporting logs
+** System logs
+
+=== OCSP Certificate Renewal 
+
+* This certificate is autogenerated inside the Cisco ISE `MIL-ISE909`, to access the CSR generator follow the steps below:
+
+IMPORTANT: You must request one certificate for each node
+
+* To generate new self-signed certificates, navigate to  Administration > System > Certificates > System Certificates. Click the Generate Self Signed Certificate.
+
+image::ospfCert1.png[image,width=596,height=228]
+
+* Under the Usage section, select the role to be used from the drop-down menu. To Renew OCSP Certificate select the corresponding option. 
+
+* ISE itself will autogenerate and update the certificates for both nodes. Last step will be to control everything is up to date.
+
+<<<
+  
+== Cisco Nexus 5000
+
+.Cisco Nexus 5612
+|===
+|DNS |IP |Device |BIOS |System
+
+|MIL-SW904 |10.40.123.139 .2+.^|Cisco Nexus 5612 .2+.^|3.7.0 .2+.^|7.3(3)N1(1)
+|MIL-SW905 |10.40.123.140 
+|===
+
+.Support
+https://mycase.cloudapps.cisco.com/case[Cisco Case]
+
+=== Check the routing 
+
+* Log into the MIL-SW904 or MIL-SW905. Run `sh ip prefix-list ?` to show existing prefixs. Example:
+
+```Cisco
+MIL-SW904# sh ip prefix-list ?
+  <CR>
+  >                      Redirect it to a file
+  >>                     Redirect it to a file in append mode
+  WORD                   Name of prefix-list (Max Size 63)
+  static-DSL_DATA        Known prefix-list name
+  static-EITO_PROD       Known prefix-list name
+  static-ITDCC           Known prefix-list name
+  static-IT_CSP_TRANSIT  Known prefix-list name
+  static-MGMT            Known prefix-list name
+  static-SERVICE_CTP     Known prefix-list name
+  static-TRUSTED_S2S     Known prefix-list name
+  static-UNTRUSTED_U2S   Known prefix-list name
+  |                      Pipe command output to filter
+
+MIL-SW904#sh ip prefix-list static-IT_CSP_TRANSIT
+ip prefix-list static-IT_CSP_TRANSIT: 2 entries
+   seq 5 permit 10.50.160.0/20
+   seq 10 permit 10.30.173.0/22
+```
+* Has to be picked depending on the VRF
+* If the IP is already inside the prefix there's no need to configure the routing, add the ACL to each context 
+
+=== Network insertion on prefix-list 
+
+* To insert a new IP in the prefix-list follow the steps below:
+* Go to `configure terminal`
+* Type the command `ip prefix-list _name_ description _string_` -> Optional: Adds an information string about the prefix list or `ip prefix-list _name_ [ seq number ] [{ permit | deny } prefix {[ eq prefix-length ] | [ ge prefix-length ] [ le prefix-length ]}]`
+
+.Example: 
+```
+ip prefix-list static-UNTRUSTED_U2S seq 45 permit 10.30.173.0 le 24
+show ip prefix-list _name_ -> to review the list
+copy running-config startup-config
+```
+=== Configuring the Route in an existing Interface 
+
+* To configure a new route inside the interface follow the steps below:
+.Example: 
+```
+sh run vrf UNTRUSTED_U2S
+conf t
+vrf context UNTRUSTED_U2S
+ip route X.X.X.X/X Vlan<id> IP next-hop address in format i.i.i.i
+copy running-config startup-config
+```
+
+<<< 
+
+== F5 
+
+.BIG-IP Devices
+|===
+|DNS |IP |Description |Version
+
+|MIL-LB515 |10.30.126.176 https://10.30.126.176[GUI] |Production Active .4+.^|15.1.10.2 Build 0.44.2
+|MIL-LB514 |10.30.126.175 https://10.30.126.175[GUI] |Production Passive
+|MIL-LB513 |10.30.126.165 https://10.30.126.165[GUI] |PreProduction
+|mil-obm-lb1 |10.40.225.126 https://10.40.225.126[GUI] |Virtualized on https://10.40.59.19/[MIL-CFE01] F5 Pro active 
+|mil-obm-lb2 |10.40.225.123 https://10.40.225.123[GUI] |Virtualized on https://10.40.59.19/[MIL-CFE01] F5 Pro standby
+|===
+
+.Support
+* https://support.weyland-yutani.example/LTG/[Weyland-Yutani Support]
+* e-mail:
+
+=== Nodes description
+
+image::nodeDescriptionF5.png[image,width=596,height=228]
+
+https://my.f5.com/manage/s/article/K12213214[source] +
+https://clouddocs.f5.com/training/community/f5cert/html/class1/modules/module3.html[source]
+
+TIP: To deepen the information about the F5 go https://support.F5.com/csp/home[here]
+
+=== Remediation of the header using the iRule Pro
+
+.`iRule:/F5_FE-DMZ-ext/RemoveX-Header-Response_Irule`
+* With the IP search in the virtual server list from ALL contextes
+* Open the correspondent service
+* Go to resources from the needed context, otherwise it will be in Read Only
+* Pick the correct iRule then press finished
+
+.From CLI
+. `tmsh`
+. `cd /FE-`<needed context>
+. `list ltm virtual` if you need to find the name
+. `modify ltm virtual [virtual_server_name] rules RemoveX-Header-Response_Irule`
+
+.Some useful commands
+* If a replacement is needed you can: `modify ltm virtual my_vs rules { my_irule }`
+* If you need to find the iRule you can: `list ltm rule`
+
+=== Find the devices in the F5 Production enviroment
+
+.GUI
+* Log into the GUI -> local traffic -> network map
+* Select the partition ALL -> introduce in filter the IP or VM
+
+.CLI
+* Log into the F5 CLI and run `tmsh` 
+* List items -> `cd / to root` -> `list /ltm node recursive <nodeName>`  
+* Or this can run from bash: `tmsh -c "cd /; list /ltm node recursive" | grep -b2 <nodeName>`  
+* To list all the nodes from all contextes run: `cd /`  
+** `list /ltm node recursive`
+* Once found the correct one run: `cd <context>`  
+** `list /ltm node <nodeName>`  
+
+TIP: From bash `tmsh -h` helps you with what to do, `tmsh --help` gives you detailed info
+  
+=== Verifying the TSL
+
+.GUI
+* Log into needed F5 and look for the server:
+** Inside the server you should search for the advanced conf and see the available conf
+
+.CLI
+* Log into needed F5 and:
+** Type `openssl s_client -connect VIP:port number`
+** Example: `openssl s_client -connect 10.10.10.10:443 tslversion`  
+* This command will verify all the certificates configured in the f5:
+```
+show /ltm profile client-ssl | grep -E "TLS|Ltm::ClientSSL" | grep -v 1.2 | grep -v DTLS | grep -v ' 0'
+Output Example:
+Ltm::ClientSSL Profile: pre-discovery.seegson.example_cert
+TLSv1.3 0-RTT
+  TLS Protocol Version 1.0                                        1.6K
+  TLS Protocol Version 1.1                                          91
+  TLS Protocol Version 1.2                                       65.5K
+  TLS Protocol Version 1.3                                           0
+  DTLS Protocol Version 1                                            0
+  DTLS Tx Pushbacks                                                  0
+```
+=== Patching Activity
+
+* This activity runs from MIL-LB515.int.seegson.example
+* A notification mail must be sent to monitoring group to signal the beginning
+* Turn off nodes as instructed from dedicated file depending on number: T71, T72 or T73
+** Log in MIL-LB515.int.seegson.example and run: `bash t7_all-main_v01.3.sh`
+* Contact the needed collegue and comunicate that nodes are offline and activity can begin 
+**
+
+NOTE: Do not contact him through: company mail. He does not read it
+
+* The application owner will contact you back to ask you to turn on the nodes
+* Once the nodes are back online notify Kelland to verify.
+** Kelland shift lead: +39 000 000 0001 
+** Kelland on-call engineer: +39 000 000 0002
+** They will verify once the shift starts according to CEST time zone
+* A notification mail must be sent to monitoring group to signal the end
+
+> Insert sample and link to patching procedure. Or include it here
+> The other T7 patching doc must be shipped together with this one or implemented here
+
+NOTE: If problems occurs you can find documentation in Weyland-Yutani OneDrive inside Cyclic Patching folder
+
+=== Modify the banner in F5 CLI
+
+CAUTION: Do not take `vi` or `vim` https://vim.works/2019/03/03/emergency-vim-quickstart/[lightly]! Take sometime to read how to use it. https://www.adminschoice.com/vi-editor-quick-reference[Read me!]
+
+.From F5's CLI
+```
+vi /config/ssh/ssh_banner
+#Insert Banner 
+________________________________________
+             Seegson Italy
+
+      This network is protected by
+         a data security system
+
+          Unauthorized access
+          will be prosecuted.
+________________________________________
+
+Equipment: MIL-LB513
+
+Customer : Seegson
+
+Descr.   : F5 BIG-IP LTM-I4600
+________________________________________
+
+tmsh modify /sys sshd include "Banner /config/ssh/ssh_banner"
+
+tmsh save /sys config   #safe the config file
+```
+
+=== Rule configuration on LTM to accept incoming requests from specific IP 
+
+.Example: 198.51.100.12 * CRM di lasalle.example to a specific URL (https://scoprioffer.seegson.example/api)
+* If the public IP of the service is not available, use `nslookup` or press http://www.kloth.net/services/nslookup.php[nslookup site]
+* Once the IP is obtained, find the corresponding private IP by querying the MIL-FW900 firewall (10.40.123.141):
+
+```Cisco
+- MIL-FW900-1 / DMZ / sec / act # show run nat
+object network obj-10.50.166.36
+ nat (LEGACY-DMZ, DSL_DATA) static 203.0.113.37 no-proxy-arp
+```
+
+==== From F5
+.GUI
+* Select "F5_FE_DMZ_ext" from the "Partion" drop-down menu
+* From Main -> Local Traffic -> Virtual Server
+* Put private IP 10.50.166.36, followed by wildcard `*`
+* Click on the entry of the server with Service Port 443 (HTTPS)
+* "Resources" from the horizontal menu above
+* Select the text contained in the "Name" field under "iRules" and copy (Ctrl + C or right mouse button)
+* Click on iRules from the menu on the left
+* Paste in the search field the text previously copied followed by wildcard `*`
+
+<<<
+
+* Insert the new instruction in the iRule code. Example: 
+
+```tcl
+when HTTP_REQUEST {
+  #CHG 10001
+  switch [HTTP :: host] {
+
+"discoveroffer.seegson.example" -
+"discoveroffer.seegson.example" {
+switch -glob [HTTP :: uri] {
+"/ api *" {
+if {([class match [IP :: client_addr] equals ministi02_Tool_https://eag.seegson.example/vpn/index.html[EAG]LE_Kelland_net]) or
+([class match [IP :: client_addr] equals ministi02_Tool_VDL_net]) or
+!!!!!!! new instruction inserted ---------> ([class match [IP :: client_addr] equals ministi02_CRM_Lasalle_net]) or <--------
+ ([class match [IP :: client_addr] equals ministi02_Hyperdyne_net]) or
+```
+
+* Click on Update to save the changes
+* Click on Pending Sync at the top left next to the F5 logo, to synchronize the changes made with the backup F5
+* Select the line corresponding to the device with "Sync Status" in yellow from the Device box and click on the "Sync" button
+
+=== Update User List for alsmobile
+
+* Connect to the active F5 BIG-IP LTM https://10.30.126.176[GUI] `10.30.126.176` then import the file containing the user lists:
+
+IMPORTANT: It has to be done from `Common` Partition
+
+. Main -> System -> File Management -> Data Group File List 
+** [line-through]#Check latest "App-Android_msisdn_users_v2" number, as of 20230705 is 19#
+. Main -> System -> File Management -> Data Group File List -> Import (button on the right)
+. "Choose file" button
+. Pick "Overwrite existing"
+. In "Name" pick: "App-Android_msisdn_users_v2"
+. In "File Contents" select the "String" item
+. In "Data Group Name" enter the name of the group: "App-Android_msisdn_users_v2"
+. Import
+
+// What about having Data Group Name empty? It won't be referenced from iRule
+
+<<<
+
+[.lead]
+[.text-center]
+The following text is no longer necessary, but can be useful
+
+.`Update the reference to the Data Group File List in the iRule:`
+. Main -> Local Traffic -> iRules
+. Partition F5_FE-DMZ-Ext 
+. Select the first iRule `APP-android_v2-http_iRule` 
+
+CAUTION: Beware that there is another one is `s`, APP-android_v2-http**s**_iRule
+
+[start=4]
+. Modify line 6 `set static :: user_for_MSISDN "App-Android_msisdn_users_v19` with the updated value
+. Click bottom left on Update
+
+.`If F5 reports an error in compiling the file, proceed as follows:`
+. Copy only line 1 of the file and paste it in the F5 box
+. Click on Import
+. Go to the .txt file, select all the lines except line 1 already copied
+. Paste the selected lines in the F5 box
+. Import
+
+NOTE: It rarely happens but: If there is Pending Sync at the top left next to the F5 logo, click it to synchronize the changes made with the backup F5
+
+// How can I do it from CLI? How can I delete older ones owned by root?
+
+=== Implement ACL in F5
+
+* Find out service name:
+. from `cmd` run: `nslookup <URL/FQDN> without https and without trailing /`
+. pick up the public IP and log into the firewall `10.40.123.142` `MIL-FW901`
+. from DMZ context look for the local IP: show nat | i `<publicIP>`
+* Look up the ACL group:
+. login into F5, PRE or PRO depending on the request
+. Click the Virtual Servers on the left menu
+. From top right select All[Read only] partition
+. Put the private IP in the search bar surrounded by wildcards `*`
+. From Resources Tab the iRules, always choose the `https` secure one
+. Look in each iRule the name, it's usually after "equal" inside the TCL script
+. From the left menu Local Traffic -> iRules -> Data Group List
+. Change partition to needed one
+. Put iRules name in the search bar surrounded by wildcards `*`
+. From the CMatrix get the IP and put it in Address
+. From the CM get the Note cell and put it in Value
+. Press Add and Update
+. Repeat the last steps until all the IPs are added
+* Answer the e-mail
+
+// A video procedure would be nicer
+
+=== Create a Virtual Server (GUI)
+* Go to F5 GUI, inside Virtual Server -> Create. 
+* Follow the images below to continue the configuration
+
+image::virtualServer1.png[image,width=596,height=228]
+
+image::virtualServer2.png[image,width=596,height=228]
+
+image::virtualServer3.png[image,width=596,height=228]
+
+image::virtualServer4.png[[image,width=596,height=228]
+
+image::virtualServer5.png[image,width=596,height=228]
+
+.Pool Creation 
+image::virtualServer6.png[[image,width=596,height=228]
+
+.If it is a new Pool
+image::virtualServer8.png[image,width=596,height=228]
+
+.If are available, please check from Node List
+image::virtualServer9.png[image,width=596,height=228]
+
+.Then, associate Pool and Default Persistence profile to Virtual Server
+image::virtualServerA.png[image,width=596,height=228]
+
+.Health Monitor Check
+image::virtualServerB.png[image,width=596,height=228]
+
+.New Client SSL profile creation
+image::virtualServerC.png[image,width=596,height=228]
+
+image::virtualServerD.png[image,width=596,height=228]
+
+// A video would be nicer
+
+=== Update or Upgrade BIG-IP 
+
+* For more information go to the F5 https://my.f5.com/manage/s/article/K84205182[guide] or follow the https://www.f5.com/pdf/deployment-guides/bigip-update-upgrade-guide.pdf[manual]
+* A case to https://support.weyland-yutani.example/LTG/[Weyland-Yutani] must be opened in order to retrieve the updates. 
+
+* If it's an HA (High Availability) Active Stand-by configuration:
+** Start from Standby device 
+** In case of configuration changes: `cpcfg --source=<volumeA> <volumeB>`
+** Disable automatic Sync in order to prevent sync errors from the different installed versions
+*** Check actual status: `tmsh list /cm device-group` or `tmsh list /cm device-group Device-group-1`
+*** Disable auto-sync: `tmsh modify /cm device-group Device-group-1 auto-sync disabled` and save `tmsh save /sys config`
+
+CAUTION: Once Automatic Sync is disabled, the configuration changes must be manually synchronized. 
+
+.Update Steps CLI
+* Push the needed isos to the path `/shared/images`
+* Go as root to the path `/shared/images`
+* Check volume software: `tmsh show sys software` to view software informations or list the images: `tmsh list sys software image`
+* Create the new volume for the new iso: `tmsh install sys software image <BIG-IP image ISO name> volume <volume_name> create-volume`
+** If you need to install an Hotfix: : `tmsh install sys software hotfix <BIG-IP hotfix-name.hotfix> volume <volume_name> create-volume` 
+
+TIP: If you get space error you have to remove an old volume: `tmsh delete sys software volume <volume_name>`
+
+* Check install status: `tmsh show sys software status` or `watch -n 30 "tmsh show sys software status"`
+* Reboot into the new volume: `tmsh reboot volume <volume_name>`
+
+WARNING: After you enter this command, the system immediately begins restarting. The system drops all existing connections and does not pass traffic until the restart completes and the BIG-IP configuration loads.
+
+.In case of configuration changes in the volume
+* Use the following syntax to copy the configuration from the current active configuration to the new boot location, prior to restarting and booting into the new volume: `cpcfg --source=<volumeA> <volumeB>`
+
+=== F5 Failover
+
+To initiate a Manual Failover from the currently Active HA Peer BIG-IP in the Traffic Group, the following steps can be performed:
+
+.GUI Failover:
+. Log in to the active BIG-IP as the administrator
+. Click the Active link in the upper left hand corner next to the F5 Ball and Online. This is a shortcut link that takes you directly to Device Management > Traffic Group and into the Traffic Group for which the BIG-IP is currently the Active HA Peer BIG-IP.  
+. Near the bottom of the Traffic Group's config page, click the Force to Standby button to initiate the Manual Failover. And watch the HA Role of that BIG-IP move into the Standby HA Role in the upper left hand corner next to the F5 Ball and Online.
+
+.Reach the active `MIL-LB515.int.seegson.example` as shown below:
+image::failoverF5.png[image,width=596,height=228]
+
+.Inside Devices -> Change the Description and Press force `Stand by`
+image::failoverF5n2.png[image,width=596,height=228]
+
+.CLI Failover:
+. Log in to the active BIG-IP CLI as the administrator.
+. Navigate to the LTM module by typing `tmsh`.
+. Check the current state of the devices by running the command `show sys failover`.
+. Trigger the failover with `run sys failover standby`.
+
+<<<
+  
+=== About Data-Group
+
+==== Search data-group in F5 CLI
+* Go to the needed enviroment PRE or PROD
+* From `tmsh` run :`cd /`
+* To search the context where the data-group is stored type `list ltm data-group recursive | grep data-groupName`
+** Example: `list ltm data-group recursive | grep NostromoCare-PRE_net`
+* Then to get the info needed from the data-group `list ltm data-group internal data-groupName`
+** Example: `list ltm data-group internal NostromoCare-PRE_net`
+
+==== Add IPs to a data-group in F5 from GUI
+Inside the excel take the URL do `nslookup xyz.seegson.example`
+
+.Example:
+```powershell
+  PS C:\> nslookup backoffice.seegson.example
+Server:  ns-office-it2.seegson.example
+Address:  10.74.100.239 --> Priv IP
+
+Name:    backoffice.seegson.example
+Address:  203.0.113.172
+Aliases:  backoffice.seegson.example
+```
+
+NOTE: With the Public IP go to the DMZ context in ASA, and run a `sh nat | i <publicIP>`. DMZ context is used because ther is NAT  
+
+.Example:
+```Cisco
+MIL-FW900-1/DMZ/pri/act#  sh nat | i 203.0.113.172
+36 (LEGACY-DMZ) to (DSL_DATA) source static obj-10.50.166.149 203.0.113.172  no-proxy-arp
+```
+
+* With the IP given from the ASA go to F5 Network map with partition: All. Be aware of the port you need, 80 or 443
+* Take the Virtual Server name
+* Search in the VS List the name you got from the prior step -> Resources -> click on the iRule, it leads you to the Properties of the iRule, read what it says and select the Datagroup
+* Then go inside iRules -> Datagroup List -> Paste the datagroup.  
+** Example: `Backoffice_BE190_net`
+* Go inside the datagroup and Add the needed IPs
+* Remember: to comment the added IPs using the Value option
+* Press Add and Update to save the changes
+
+IMPORTANT: In some cases you wil have more `data-groups` inside the `iRule`, verify the name from the CM, in some cases the IP has to be add into a `object-group`, in others a new `data-group` must be created
+
+==== Add/Remove IPs to a data-group in F5 from CLI
+
+.To add
+
+* A single entry
+** `tmsh create /ltm data-group internal <datagroup_name> records add { <entry_value> }`
+* Multiple entries at once
+** `tmsh create /ltm data-group internal <datagroup_name> records add { <entry1_value> <entry2_value> ... }`
+
+.To remove
+
+* A single entry
+** `tmsh delete /ltm data-group internal <datagroup_name> records delete { <entry_value> }`
+* Multiple entries at once
+** `tmsh delete /ltm data-group internal <datagroup_name> records delete { <entry1_value> <entry2_value> ... }`
+
+* Example:
+
+```
+[zzyourUser@MIL-LB515:Active:In Sync] ~ # tmsh
+cdzzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/Common)(tmos)# cd /
+zzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/)(tmos)# cd F5_FE-DMZ/
+zzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/F5_FE-DMZ)(tmos)# modify /ltm data-group internal NostromoCare-pro_net records 
+Options:
+  add                delete             modify             none               replace-all-with
+zzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/F5_FE-DMZ)(tmos)# modify /ltm data-group internal NostromoCare-pro_net records add/delete {n.n.n.n}
+```
+
+==== Add a new data-group to the F5 
+
+.Example: CM 8.18
+```powershell
+PS C:\Windows\system32> nslookup scopriofferta.seegson.example
+DNS request timed out.
+    timeout was 2 seconds.
+Server:  UnKnown
+Address:  10.74.100.239
+
+Name:    scopriofferta.seegson.example
+Address:  203.0.113.37
+Aliases:  scopriofferta.seegson.example
+
+Private IP
+10.50.166.36
+
+VS name
+minisiti02pro-discovery_HTTPS_vs
+
+iRule
+/F5_FE-DMZ-ext/minisiti02pro-discovery_HTTPS_iRule
+```
+
+In this case once we get to the iRule we noticed there is no datagroup that corresponds to the service needed in the Cm so we proceed to create it
+
+* Log in the F5 GUI -> go to iRules -> select Data-group -> create the name -> select a type in this case was `address` -> add the IP address needed and the value, a comment -> press Update
+
+==== Add the datagroup inside the needed iRules:
+. Data-group name = `minisiti02_CRM_Smart_Contact_net`
+. IP address = `198.51.100.13`
+. Line added to the iRule referring to the datagroup = `([class match [IP::client_addr] equals minisiti02_CRM_Smart_Contact_net]) or`
+
+=== Removing a host from node/pool list 
+
+NOTE: To do this task you must have the node and pool name, to fetch those go to the Network Map 
+
+* Go inside the pool list, search the needed pool and direct to the right context finally remove the node from the pool
+* After that direct to the node list, search the node and delete it
+
+=== Check if nodes has traffic 
+
+* Inside the F5 GUI, go to statistics -> Module Statistics from there search the needed pool and go to local traffic. As shown in the below example: 
+
+image::trafficInNodes.png[image,width=596,height=228]
+
+NOTE: Remember to be in All contexts 
+
+<<<
+
+== DNS BIND9
+
+.DNS devices
+|===
+|DNS |IP |Role
+
+|mil-srv-x008 |10.30.207.5 |DNS master
+|sev-x101 |10.50.166.21 .2+.^|DNS Public / External
+|sev-x102 |10.50.166.22 
+|sev-x103 |10.50.169.21 .2+.^|DNS Private / Internal
+|sev-x104 |10.50.169.22 
+|===
+
+TIP: DNS System Official Documentation https://www.isc.org/bind/[BIND 9]
+
+=== Insert or Delete a Record inside the server BIND 9 DNS Master (Internal sync)
+
+==== CLI
+
+* Log into `mil-srv-x008`
+* Path is: `cd /var/named/addr`
+* Check db: `grep -R <regex> *`
+
+[cols="35%,80%"]
+|===
+|Description |Commands
+
+.2+|Serial number update
+|Test: `sed -E -n "s/[0-9]{8}/$(date +%Y%m%d)/p" ternal/db.seegson.example`
+m|sed -E -i "s/[0-9]{8}/$(date +%Y%m%d)/" ternal/db.seegson.example
+
+.2+|Comment
+|Test: `sed -n '/bookinglearn/s/^/;/p' ternal/db.seegson.example`
+m|sed -i '/bookinglearn/s/^/;/' ternal/db.seegson.example
+
+.2+|Uncomment
+|Test: `sed -n '/\^;bookinglearn/s/^;//p' ternal/db.seegson.example`
+m|sed -i '/\^;bookinglearn/s/^;//' ternal/db.seegson.example
+
+.2+|Add a line after a specific regex pattern
+|Test: `sed -n '/regex/a\new_line' ternal/db.seegson.example`
+m|sed -i '/regex/a\new_line' ternal/db.seegson.example
+
+.2+|Add a line after a specific line number
+|Test: `sed -n '4a\bookinglearn' ternal/db.seegson.example`
+m|sed -i '4a\bookinglearn' ternal/db.seegson.example
+
+.2+|Append a line
+|Test: `sed -n '$a\bookinglearn' ternal/db.seegson.example`
+m|sed -i '$a\bookinglearn' ternal/db.seegson.example
+|===
+
+Commit changes: `rndc reload`
+
+IMPORTANT: Update serial number date on Master every time it gets modified. Otherwise it does not update the slaves.
+
+> 20230705 This does sync all the slaves!!!!!!!!!
+
+==== Monkey CLI
+
+```
+@                       86400   IN      SOA     dns1.int.seegson.example. postmaster.int.seegson.example.
+                                                2023032001      ; serial number
+                                                3600            ; refresh [1h]
+                                                600             ; retry [10m]
+                                                1209600         ; expire[14d]
+                                                3600            ; min TTL [1h]
+
+@                       86400   IN      SOA     dns1.int.seegson.example. postmaster.int.seegson.example.
+                                                2023032001      ; serial number
+                                                3600            ; refresh [1h]
+                                                600             ; retry [10m]
+                                                1209600         ; expire[14d]
+                                                3600            ; min TTL [1h]
+```
+
+.This process allows to replicate the files "DB" in the DNS to the two external and the two internal slaves sev-x101 to sev-x104
+. Log into server Master `MIL-SRV-X008` as root
+. Use `grep -R <regex> <filename/*>` to check if the info has to be added in another db
+. Edit the relative file to the zone that has to be modified. 
+  * Example: 
+  * `vi /var/named/addr/internal/<dbFileName>`
+  * `vi /var/named/addr/external/<dbFileName>`
+
+CAUTION: Do not take `vi` or `vim` https://vim.works/2019/03/03/emergency-vim-quickstart/[lightly]! Take sometime to read how to use it. https://www.adminschoice.com/vi-editor-quick-reference[Read me!]
+
+[start=4]
+. Update the Serial Number in all the db's you are working, internal, external.
+. Run `rndc reload` to restart the service and apply latest changes
+
+CAUTION: Do not execute the following process. It leads to unsynchronized slaves and loss of changes. Because if changes aren't saved in the master, once restarted it imposes its own version. 
+
+[.lead]
+[.text-center]
+The following is informative
+
+.**Ultra monkey**, single files on each slave
+. Log in the needed DNS slave sev-x101 to sev-x104
+. Go to `cd /var/named/slaves/external/`
+. Open the file with `vi <db.name>`
+. Commit changes: `service named restart`, in order to verify: `service named status`
+
+.Alternative route to DNS
+* Log into nexus 5k MIL-SW904 or MIL-SW905
+* Connect to DNS internal or External using `ssh zzoperator1@10.50.166.21 vrf <vrfName>` 
+* Gain admin privileges `sudo su - `
+* Look for needed info: `grep <regex> /var/named/slaves/internal/*`
+
+==== DNS decommission on seegson.example
+
+. To decommission a domain inside seegson.example the client must make the request in https://seegson.sharepoint.example/sites/V-DNA[V-DNA Home]
+
+<<<
+
+== MTA Sendmail (Now Proofpoint)
+
+.DNS devices
+|===
+|DNS |IP |Description
+
+|mta_vs |10.50.166.19 |vIP external
+|sev-x101 |10.50.166.21 .2+.^|MTA external
+|sev-x102 |10.50.166.22 
+|mta-int_vs |10.50.166.20 |vIP internal
+|sev-x103 |10.50.169.21 .2+.^|MTA internal
+|sev-x104 |10.50.169.22 
+|===
+
+NOTE: MTA = Mail Transfer Agent, it runs on port 25 and yes, same devices as DNS
+
+> RHEL 6 configuration of https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/deployment_guide/s2-email-mta-sendmail#doc-wrapper[Sendmail]
+> Official Proofpoint https://www.proofpoint.com/us/products/email-protection/open-source-email-solution[website]
+
+=== Add new Recipient
+
+. Login to the two servers, sev-x101 and sev-x102
+. `cd /etc/mail`
+. Add the new recipient: `echo "@net.seegson.example       MailSeegson:[10.50.166.20]" >> /etc/mail/smarttable`
+. Rebuild the hash database file `makemap hash /etc/mail/smarttable.db < /etc/mail/smarttable`
+. Restart the Sendmail service for the changes to take effect: `service sendmail restart`
+
+=== Edit Mail Files
+
+* Files can be `/etc/mail/`: 
+** access
+** smarttable
+* Make a backup of the current `/etc/mail/<file>` as showed `cp /etc/mail/<file> /etc/mail/<file>.bak`
+* Edit the `/etc/mail/<file>`
+** https://vim.works/2019/03/03/emergency-vim-quickstart/[VIM]
+** If you need to append a line to the file you can `echo "@net.seegson.example       MailSeegson:[10.50.166.20]" >> /etc/mail/smarttable`
+* Rebuild the hash database file: `makemap hash /etc/mail/<file> < /etc/mail/<file>`
+* Restart the Sendmail service for the changes to take effect: `service sendmail restart`
+
+=== Migrate MTA destination (Untested)
+
+. Install the necessary TLS libraries: `$ sudo yum install openssl openssl-devel`
+. Edit the MTA configuration file to enable TLS 1.2:
+  * If you are using Postfix, you can edit the `/etc/postfix/main.cf` configuration file and add the following lines:
+
+```bash
+smtpd_tls_security_level = may
+smtpd_tls_protocols = !SSLv2,!SSLv3,!TLSv1,!TLSv1.1, TLSv1.2
+smtpd_tls_mandatory_protocols = TLSv1.2
+smtp_tls_protocols = !SSLv2,!SSLv3,!TLSv1,!TLSv1.1, TLSv1.2
+smtp_tls_mandatory_protocols = TLSv1.2
+```
+
+  * These lines set the minimum allowed TLS protocol version to 1.2 for both incoming and outgoing connections.
+. Restart the MTA service: `$ sudo systemctl restart postfix`
+. Test the TLS configuration:
+  * TLS scanning tool like SSL Labs or Qualys SSL Labs can be used to test the TLS configuration of your MTA and check if it has valid certificates. You can also use a network sniffer like `tcpdump` to capture and analyze the network traffic between the server and the clients to verify that the traffic is encrypted with TLS.
+  * A TLS certificate is needed in order to use TLS encryption with your MTA. The certificate will be used to authenticate the server to clients and establish a secure connection.
+
+=== Verify The log MTA
+
+. Connect to the machines: `sev-x101.int.seegson.example 10.50.166.21` and `sev-x102.int.seegson.example 10.50.166.22`
+
+TIP: These machines can be reached from Ansible mil-ansible-01 `10.40.59.24`
+
+[start=2]
+. Log in as root and check the logs in `/var/log/mailog-`
+. Look for needed info: `zgrep <regex> /var/log/*`
+* If needed to unzip gz files run: `gunzip maillog.1.gz`
+. The activity of each individual mail delivery is identified by a code:
+
+```log
+Mar  9 09:22:19 sev-x101 sendmail[100119]: STARTTLS=client, relay=smtp.seegson.example., version=TLSv1/SSLv3, verify=FAIL, cipher=DHE-RSA-AES256-SHA, bits=256/256
+
+Mar  9 09:22:19 sev-x101 sendmail[100119]: 2568MECF100117: to=<monitoring@hyperdyne.example>,<apollo.alerts@mail.seegson.example>, delay=00:00:00, xdelay=00:00:00, mailer=Seegson, pri=171351, relay=smtp.seegson.example. [198.51.100.14], dsn=5.0.0, stat=Service unavailable
+
+Mar  9 09:22:19 sev-x101 sendmail[100119]: 2568MECF100117: 2568MJCF100119: DSN: Service unavailable
+```
+
+or
+
+```
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqr101076: ruleset=check_rcpt, arg1=<test_qualysscan@smtpcheckqualys.smtp>, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (may beforged), reject=550 5.7.1 <test_qualysscan@smtpcheckqualys.smtp>... Relaying denied. IP name possibly forged [198.51.100.15]
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqr101076: from=<qualysscan_test@smtpcheckqualys.smtp>, size=0, class=0, nrcpts=0, proto=SMTP, daemon=MTA1-private, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (may be forged)
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqs101076: ruleset=check_rcpt, arg1=<qgmrtest%qualysguard.com@[203.0.113.120]>, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (maybe forged), reject=550 5.7.1 <qgmrtest%qualysguard.com@[203.0.113.120]>... Relaying denied. IP name possibly forged [198.51.100.15]
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqs101076: lost input channel from sn001.s01.sea01.qualys.com [198.51.100.15] (may be forged) to MTA1-private after rcpt
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqs101076: from=<qgmrfrom@[203.0.113.120]>, size=0, class=0, nrcpts=0, proto=SMTP, daemon=MTA1-private, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (may be forged)
+```
+
+<<<
+
+== Squid Proxy
+
+.Proxy devices
+|===
+|DNS |IP |Role |Version
+
+|sev-x100 |10.50.166.100 |Proxy Active .3+.^|4.15
+|sev-x222 |10.50.166.102 |Proxy Standby
+|Proxy VIP |10.50.166.101:8080 | Balanced on F5
+|===
+
+=== Proxy Squid Configuration
+* Connect to Ansible through https://eag.seegson.example/vpn/index.html[EAG]
+* Check on ASA Firewall inside DMZ context
+* If there are ACLs towards the service port add: `access-list GLOBAL_ACL extended permit tcp host 10.50.166.102 any4 eq 8226`
+* From mil-ansible-01 log into 10.50.166.100 aka sev-x100
+* With root access create file in `/etc/squid/`
+* Insert domains in the file: `allowed-ACL_NAME.squid`
+* Edit the file:
+
+CAUTION: Do not take `vi` or `vim` https://vim.works/2019/03/03/emergency-vim-quickstart/[lightly]! Take sometime to read how to use it. https://www.adminschoice.com/vi-editor-quick-reference[Read me!] 
+
+```bash
+[root@sev-x100 squid]# vi allowed-win_act.squid
+# YYYYMMDD 
+# If edited after creation keep track of it with: YYYYMMDD_v0.1
+.microsoft.com  
+.windowsupdate.com
+.windows.com
+```
+
+* Edit `/etc/squid/squid.conf` file and add the following:
+** For one or more IPs search the needed rule and add it `x.x.x.x/32` 
+** In the case of adding a rule follow the example below to configure it
+
+```bash
+#########################################################
+# Win Activation YYYYMMDD
+acl Win_Act src 10.30.124.15/32 10.30.124.16/32 
+acl Win_Sites dstdomain "/etc/squid/allowed-win_act.squid"
+http_access allow Win_Act Win_Sites
+######################################################### 
+```
+
+* Check at the beginning of the file if the destination port it's inside the ACL
+** Example: acl SSL_ports port 8226
+** You can find the line with: `grep {portNumber} {fileName}`
+* Restart the service: `service squid restart`
+
+IMPORTANT: Mirror the configurations on `sev-x222 10.50.166.102`
+
+.Test it
+```bash
+[root@sev-x222 squid]# tail -fn 100 /var/log/squid/access.log | grep api.partner-saas.example
+07/Jun/2021:16:49:35 +0200     23 10.50.166.112 TCP_MISS/503 0 CONNECT api.partner-saas.example:8226 DIRECT/198.51.100.16
+07/Jun/2021:16:50:20 +0200      0 10.50.166.112 TCP_MISS/503 0 CONNECT api.partner-saas.example:8226 DIRECT/198.51.100.16
+
+[root@sev-x222 squid]# grep api.partner-saas.example /var/log/squid/access.log
+```
+NOTE: In case the implementation doesn't work check if the source IP's added to the proxy are configured inside ASA
+
+==== Useful Squid Commands 
+To restart and control the status of the proxy `systemctl restart squid && systemctl status squid`
+
+==== How to read needed files
+* Unzip all the folder: `unzip -d . squid_sev-x100_20221028.zip`
+* Open it: `less etc/squid/squid.conf`
+* Look at files inside zip: `unzip -l squid_sev-x100_20221028.zip`
+* Unzip only squid.conf: `unzip -j squid_sev-x100_20221028.zip etc/squid/squid.conf -d .`
+* Open it: `less etc/squid/squid.con`
+
+<<<
+
+== Certificates Renewal
+
+IMPORTANT: Please notice this important step before asking to renew a certificate
+
+* The FQDN should be resolved from a DNS, public and/or private. You can use this public tool to verify if the service is resolved in Public DNS: https://www.infobyip.com/ipbulklookup.php[Domain and IP bulk lookup tool]
+* You can use “nslookup” from Seegson internal network to verify if it is resolved in Internal DNS.
+* The certificate can be renewed if the service is resolved at least in one of the 2 DNS (public or internal).
+* Check inventory if date is set to 01/01/1970 that means dismissed
+
+NOTE: In case it results dismissed please update the inventory.
+
+=== Update notification mail of certificates about to expire (FastDelivery - Certificates - Expiring Date)
+
+* Log into mil-nms116, inventory's device as root
+* edit file `/home/oracle/scripts/certificates/check_certificate.sh` at line 63
+
+TIP: Any changes to be made to that mail can be done from that script
+
+=== Folder on pans
+. Connecto to EAG
+. SSH to `10.40.59.24` `mil-ansible-01` with preferred application
+. Gain root privileges. (`su`)
+. `/home/ansysad/certsFD`
+. `ls -lrth`
+. The last file, right above the terminal is the needed certificate
+. `sudo cp <cert> /home/zzYOURUSER` or `sudo zip /home/zzYOURUSER/certs.zip *keyWord` make a zip with all the needed certificates
+. SFTP the cert out of the home directory in mil-ansible-01. I strongly suggest to use MobaXterm with the shared configuration
+
+// Anybody is free to make an easy fetch script
+
+=== Extract pem and key from pfx
+
+* Get the pem file: `openssl pkcs12 -in hyperdyne_account_prod.pfx -out hyperdyne_account_prod.pem -nodes`
+* Extract the key: `openssl rsa -in hyperdyne_account_prod.pem -out hyperdyne_account_prod.key`
+
+=== Create private key and CSR (common to all SHA2 type certificates)
+. Create CSR in PEM format and KEY.
+.. `cd` into configuration files' folder
+.. Edit `vi openssl-XXX.conf` depending on certificate type using CN or DSN if there's SAN.
+* `openssl-SHA2.conf`
+* `openssl-SHA2-SAN.conf`
+* `openssl-SHA1-PRV.conf`
+. SHA2 commands: `openssl req -new -newkey rsa:2048 -nodes -sha256 -out common_name.csr -keyout common_name.key -config <openssl-SHA2-??.conf>`
+. SHA1 commands: `openssl req -new -newkey rsa:2048 -nodes -sha1 -out abthq-pre.seegson.example.csr  -keyout common_name.key -config openssl-SHA1-PRV.conf`
+. Insert Common_Name when prompted, do not put password
+. Check if `.csr` and `.key` are inside the certificate's folder
+
+=== Check CSR content
+. Run `sslshopper` or similar and check it with https://www.ssl247.it/support/tools/csr-decoder[decipher]
+. Copy file content `.csr` and check if the received fields are correct.
+. <<_ca_private_Seegson_signature, CA Private Seegson Signature>>
+. <<_ca_private_fastdel_signature, CA Private FastDel Signature>>
+
+=== Archiving
+. Inside FD's shared folder `\\mil-fs01\07-Sicurezza\RINNOVO CERTIFICATI\ARCHIVIO\` 
+. Create a new folder with the naming convention `<__num.ticket__>-<__common name__>` (eg `tdmauth.seegson.example`)
+. Put inside `.csr` e `.key` files
+. Delete what has been created locally at first step.
+
+=== CA Public Seegson Signature
+. Reach https://seegson.sharepoint.example/sites/PKI/SitePages/Public%20Trust%20-%20Web%20Server.aspx[website]
+. Click on "standard SSL" if the certificate has one DNS only -> "Order now" 
+. Click on "Multi-domain SSL" if there are more than one DNS -> "Order now" 
+. Compile like below (Answers are inside "certificate request" ticket):
+
+image:cert/image1.png[image,width=752,height=470]
+
+image:cert/image2.png[image,width=752,height=984]
+
+image:cert/image3.png[image,width=752,height=984]
+
+image:cert/image4.png[image,width=752,height=984]
+
+==== Additional e-mails
+
+mailto:theBoss@seegson.example[theBoss@seegson.example]
+
+."Specify the environment". Specify Prod if the certificate is production, Pre-prod if it is PreProduction
+image:cert/image5.png[image,width=752,height=471]
+
+[start=5]
+. Click on submit and send email to mailto:theBoss@seegson.example[theBoss@seegson.example] asking for approval. +
+
+<<<
+
+=== CA Private Seegson Signature
+
+.Connect with https://enrol.pki.seegson.example/aspx/certificate/CertificateIssuancePkcs10View.aspx[domain] user
+image:cert/image7.1.png[image,width=758,height=537]
+
+. If the device is PRO, leave "Web Server Certificate - Production" selected in the first field.
+. Copy what was created above into the second field.
+. In the SAN field specify DNS/SAN list.
+* If there is one CN only put it inside the field anyway.
+. In "Request/Service Description" specify a generic value: "web service"
+. Local Market/Country: "IT"
+. Operational/Delivery/Service Owner's and Business Owner's Email address specify: mailto:DL-certificates@internal.seegson.example[DL-certificates@internal.seegson.example]
+. Required Contacts: mailto:dl-another-whynot@seegson.example[dl-another-whynot@seegson.example]; mailto:theBoss@seegson.example[theBoss@seegson.example]; mailto:DL-theDL@seegson.example[DL-theDL@seegson.example]
+. Keep track of request's number putting it inside the previously created share 
+. You'll receive certificate by the e-mail.
+
+.As shown below:
+image:cert/image7.png[image,width=526,height=270]
+
+<<<
+
+=== CA Private FastDel Signature
+Once generated the CSR, common procedure to all certificates, and checked the correctness, to sign the CSR on CA FastDel:
+
+IMPORTANT: root privileges needed.
+
+. `cd /app/causer`. 
+. Move `.key` e `.csr` into `/app/causer`: `cp *.csr *.key /app/causer/`
+. The command depends on the certificate:
+* Server type:
+** SERVER SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions server_cert`
+** SERVER SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions server_cert`
+* Client type:
+** CLIENT SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions usr_cert`
+** CLIENT SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions usr_cert`
+* LDAP type:
+** LDAP SERVER SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions server_cert`
+** LDAP SERVER SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions server_cert`
+** LDAP CLIENT SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions usr_cert`
+** LDAP CLIENT SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions usr_cert`
+. Once executed CA Fast-Del's passphrase is prompted, after that answer `Y` to the following requests.
+.. The certificate will be archived into `/app/causer/certs`
+.. Copy it inside the path where we created `.key` and `.csr`
+.. Create `.pfx`
+.. Archive everything in the share.
+
+NOTE: If there are problems with the certificate signature (crt) it's necessary to revoke the certificate before to try again:
+`cd /app/causer/ \ openssl ca -revoke <certificate_name>.crt -config openssl-FD.conf`
+
+=== Signed certificate reception, comunication and archiving
+The certificate has to be checked and has to be aligned with the request. If it isn't it has to be requested or signaled via e-mail
+
+. Create file `.pfx` (PKCS12): `openssl pkcs12 -export -in common_name.crt -inkey common_name.key -out common_name.pfx`
+
+CAUTION: Sometimes the certificate has dots "." replaced by underscore "_". + Leave password field empty
+
+==== In case the file PFX creation fails
+. Create a `.PEM` file in order to create the `.PFX`
+. It happens often that CA Private Seegson sends a new signed certificate in binary format (DER) instead of PEM.
+. To check if it's in binary look at the file with `less`
+
+.It it's shown in this way it has to be converted in PEM format
+image:cert/image8.png[image,width=526,height=270]
+
+<<<
+
+If there isn't any DER it will be:
+```
+-----BEGIN CERTIFICATE-----
+MIIGUjCCBTqgAwIBwoTxI0xurZiqhkiG9w0BAQsFADBN
+MQswCQYDVQMBGlnaUNlcnQgSW5jMQYDVQQDEx5E
+aWdpQ2VydCBTSEEyIFwHsAxMjE1MDAwMDAwWhcN
+MwCQYDVQQGEwJHQjEQMA4dsBxMHTmV3YnVyeTEo
+-----END CERTIFICATE-----
+```
+
+[start=4]
+. Convert the file to binary: `openssl x509 -inform der -in <certificate-name-DER> -out common_name.pem`
+. Generate pfx file with `.PEM` file: `openssl pkcs12 -export -in <common_name.pem> -inkey common_name.key -out common_name.pfx`
+. Open SFTP client in order to upload the valid certificate and the `.pfx` inside FastDelivery share
+. Compress the following files with pass password (`.7z` or `.zip`): 
+* Key
+* CSR
+* CRT (certificate)
+* CA certificate (If it's DigiCert0 two are needed, root and middle)
+* PFX
+* Eventual PEM
+. zip: `zip -P <password> <my_file>.zip <whatIwanToZip>`
+. 7z: `7z a -r <my_file>.7z <whatIwanTo7zip> -p<"password">`
+
+.Example:
+image:cert/image9.png[image,width=459,height=242]
+
+.Attach the 3 CA based on which CA they come from:
+
+|===
+|Public CA Seegson - DigiCert |Private CA Seegson |CA FastDel
+
+a|
+.DigiCertCA.crt
+image:cert/cert.png[image,width=159,height=42] 
+a|
+.Seegson_Internal_Root_CA.crt
+image:cert/cert.png[image,width=159,height=42] 
+
+.Seegson_Internal_CA.crt
+image:cert/cert.png[image,width=159,height=42]
+
+a| 
+.CA-FastDel.crt
+image:cert/cert.png[image,width=159,height=42]
+
+|===
+
+[start=9]
+. Send an e-mail to whom requested the certificate to inform it's ready. Specify expire date and wait installation instructions.
+
+IMPORTANT: Do not send PRO's certificates unless directly expressed by the Project Manager 
+
+[start=10]
+. Update expiring dates on the 2 excel files
+
+=== Certificate install on systems
+
+[.lead]
+After receiving confirm to install the certificates on the systems, we can have three different installation typologies
+
+<<<
+
+==== In case CRT file is not working on NGINX (HYPERDYNE) 
+
+. When the error after the `systemctl restart nginx` shows this:
+
+image:nginxERROR.png[image,width=459,height=242]
+
+[start=2]
+
+. You need to autogenerate a new crt file `openssl x509 -inform DER -in certificate.crt -text -noout`
+
+. To check the file use the following command `openssl x509 -in certificate.crt -text -noout`
+
+. Change the name of the crt file using `mv certificate.crt so-ws-internal.seegson.example.crt` and then restart the service `systemctl restart nginx`
+
+. Chech the application using this https://scopriofferta.seegson.example/login[URL]
+
+NOTE: To check the status using `systemctl status nginx`. Remember to inform the client
+
+==== F5 BIG-IP
+. Connecto to F5 with `Common` partition
+. Reach "System -> File Management -> SSL Certificate List" path +
+image:cert/image14.png[image,width=701,height=314]
+. Look for expiring certificate like in the screenshot below (*certificate_name*) check if it's actually close to the expiring date, than Click on import +
+image:cert/image15.png[image,width=759,height=170]
+. Put the key and an id name for the new certificate (ex: vastv.cc.seegson.example_03_12_20) +
+image:cert/image16.png[image,width=705,height=389]
+. At the end click Import:
+. Click again on the newly created certificate 
+. Upload `.crt` file, the new expire date should be shown
+. Click "Local Traffic -> Profiles -> SSL Client"
+. Look for the certificate that needs update 
+
+WARNING: Watch out for the partition, it's different for every certificate
+
+image:cert/image17.png[image,width=711,height=308]
+
+[start=9]
+. Change the highlighted fields in the screenshot with the new certificate. Delete the old one. Click on Update lower left:
+image:cert/image18.png[image,width=710,height=350]
+. Once finished, remember to sync the F5 +
+image:cert/image19.png[image,width=710,height=306]
+
+IMPORTANT: Certification update (private key+certificate+chain) has to be done simultaneously on F5 and Imperva, when the certificate is Public CA.
+
+?? For some certificates we will need to add a double bundle in f5, the procedure is below
+
+<<<
+
+==== Linux Server
+
+. Load the certificate on the server. 
+. Find previous certificates path `find / -name <certName>*` or `find / -name *.crt*`
+. Make `<today_date>_rch` folder and put the old certificates
+. Move the new certificates
+. If it's docker
+  * The file owner must be `jsyssrv` run: `chown jsyssrv:jsyssrv fdcgw.seegson.example.key`
+  * Restart the container `[jsyssrv@mil-srv-x006 ~]$ docker service update --force fdcgw_kong`
+  * The command *must* be launched on one machine only, docker will restart the other one. 
+  ** > 20230518 I don't know which one. I tested it today from 6 and 4 and they restarted itself only
+. Otherwise
+  * owners must be `root:root` run: `chown root:root <filename>`
+  * Restart `nginx` service with: `/etc/init.d/nginx restart` or look in history for the right command: `grep restart ~/.bash_history`
+
+// We can script this!
+
+<<<
+
+==== Windows Server
+
+. Connect to the host, or the bridge machine to connect to the host, through Remote Desktop Connection from EAG. 
+. Right click the IP left column
+. Select "Properties" -> "Local Resources" -> "Redirect options" 
+. Flag "Drives" 
+. Click OK
+. Connect to the host, Right click the IP from the left column
+. Click on "Reconnect server"
+. Load the certificate on the server
+. Run IIS "Internet Information Service" 
+. Select hostname from left window "Server Certificates"
+. Import `.pfx` certificate
+. Locally save with "Export" button
+. Move the old certificate into the folder `C:\Certificati\certificate_old`
+. Click on "Sites" from the left list
+. Select the site correspoding to the certificate
+. Inside actions, on the right click "Edit Site" -> "Binding" -> "Edit" 
+. Inside "SSL Certificate" click the new certificate
+. Click OK
+. Click top left "Host" 
+. Click top right "Manager Server" 
+. Click "restart".
+
+> for the new machines CA root and Intermediate CA may be needed
+
+// A script would be better
+
+==== MMC install 
+
+. Open console 
+. From windows serach
+. "mmc" +
+. image:cert/image20.png[image,width=558,height=460]
+. image:cert/image21.png[image,width=558,height=460]
+. image:cert/image22.png[image,width=558,height=460]
+. Import certificates +
+image:cert/image23.png[image,width=558,height=456]
+. Restart IIS +
+image:cert/image24.png[image,width=558,height=460]
+
+==== Custom step for report.apollo.seegson.example certificate on sev-q282
+
+.This procedure is needed only in sev-q282 yearly certificate renewal process.
+. Install the new certificate on BIG-IP and WAF
+. Connect to `sev-q282` through Remote Desktop Connection from EAG. 
+. Click the `.pfx` file, select "Local Machine", next a few times
+. Select "Automatically select the certificate store based on the type of certificate
+
+NOTE: Certificate is located in Certificates (Local Computer) Personal > Certificates
+
+[start=5]
+. Open the Report Server Configuration Manager
+. Choose "Microsoft Report BI Report Server"
+. Click connect
+. Click "Web Service URL" from left menu
+. Select the dropdown menu "HTTPS Certificate" than select the report.apollo.seegson.example
+. Now Apply is clicable. Click Apply
+
+.Sample result
+image:cert/image26.png[image,width=279,height=230]
+
+Verify at https://report.apollo.seegson.example/ReportServer[URL]
+
+.Expected output
+image:cert/image27.png[image,width=279,height=230]
+
+<<<
+
+=== Service Request with WAF Team
+
+IMPORTANT: This procedure is necessary when updating a certificate together with the WAF team
+
+ > To check whether the service comes under Bridge or TRP Mode
+
+* Click on the https://seegson-dwp.onbmc.example/[link] and it will autologin using Seegson credentials
+
+* From the Menu `Browse Categories` -> `Technology_Seegson` -> `Cyber Security` and follow the steps as per screenshots:
+
+image:serviceWAF1.png[image,width=558,height=460]
+
+image:serviceWAF2.png[image,width=558,height=460]
+
+ > To update the certificate in WAF
+
+* Follow the same procedure as mentioned above screenshot but change the description in tab
+
+image:serviceWAF3.png[image,width=558,height=460]
+
+<<<
+
+== VMWare
+
+.VMWare from EAG
+|===
+|Description |IP 
+
+|vRealize Log Insight |https://10.30.207.31/
+|Network Insight |https://10.30.207.55/
+|NSX vSphere |https://10.30.207.9/
+|===
+
+=== Create the IPSET in vSPhere
+
+.Ip Sets work like the object-groups created in the ASA FW
+
+NOTE: This is configured for services that are available on the internet such as MINISITI - HYPERDYNE - AWS 
+
+* From the Menu `Network and Security` -> `Groups and tags` -> `IP Sets`
+* Create a new `IP Set`. Using the name given or previously chosen. Example: AWSHyperdyne
+* Add the IPs needed in the set and press `save`
+
+=== Add the IPSET in the rules to have data flux
+
+* Go inside `Network and Security` -> `Firewall` -> Search the machine or Rule (in this case sev-x263)
+* If there is none under that name with the needed IPs then Create one in `Add Rule`
+* Be aware of creating the Rule in the corresponding Section
+* Give the new Rule a name
+* Select the `Object Type` -> in this case the `Virtual Machine` -> sev-x263 as source
+* Add the destination machine in this case AWSHyperdyne, after this specify the Service
+in case there is no Service set as the one you need -> add a new one, specifying:
+. Name (XXXX)
+. Layer (in this case Layer3)
+. Protocol (TCP or UDP)
+. Port number (443)
+
+* Press Publish
+
+<<<
+
+== Zabbix
+
+.Zabbix devices
+|===
+|DNS |IP | Description
+
+|MIL-SRV-X011 |10.30.207.93 |Zabbix DB server 1
+|MIL-SRV-X012 |10.30.207.94 |Zabbix DB server 2
+|MIL-SRV-X013 |10.30.207.95 |Zabbix DB Backup
+|MIL-SRV-X014 |10.30.207.97 |Zabbix Engine / FrontEnd 1
+|MIL-SRV-X015 |10.30.207.98 |Zabbix Engine / FrontEnd 2
+|===
+
+=== To dismiss Certificates in Zabbix
+
+* When you receive a request from Seegson, for info in one or more Certificates
+* Go inside the inventory:
+`Registries` -> `Certificates` -> type the name an search for it -> you get the info needed
+* Go to F5 (PRO or PRE) -> `Local Traffic` -> `Network Map` inside search for the correspondent service:
+  * With the name of the certificate do an nslookup to have the IP determine if it is private or public. Example:  
+  `nslookup vas.cc.seegson.example`
+  * If it is public from the firewall run `show nat | i <publicIP>` 
+  * With the IP go to F5 and search for it in the Virtual Server List or in Network Map type
+* If you have to dismiss one or more Certificates:  
+`Registries` -> `Certificates` -> type the name an search for it
+* Once that done change the Expire Date, X date in a thousand years and the SAN, servizio dismesso
+
+=== Proactive Monitoring FastDelivery Network
+
+.Open https://10.30.207.100/index.php[Zabbix]
+image::zabix1.png[image,width=596,height=228]
+
+.Go to Tab Problems, where will be showed All Devices, in Fast Delivery:
+image::zabix2.png[image,width=596,height=228]
+
+.Then apply the filter in the Tab on the right: 
+image::zabix3.png[image,width=596,height=228]
+
+.Now you can see alarms for all the server in charge in Seegson FastDelivery.
+* Refer to only these alarms:
+** Free disk space.
+** High Memory Utilization.
+** Disk space is very low
+** Any information related to server: Big-IP Production MIL-LB515.int.seegson.example MIL-LB514.int.seegson.example
+* After performing any checks on Big-IP o other Network device, please use this template to advise our colleagues from Application side.
+
+<<<
+
+== Decommissioning
+
+=== Flag them as decommissioned on inventory
+
+. https://10.61.181.116/home.phpp[inventory]
+. click "Edit"
+. Top right at the window there's a pen and a recycle bin. Click the Pen
+. 2nd column, 6th option "Virtual Device Status", select Dismissed 
+. Bottom right of this small window press "Save"
+
+=== Fetch the info
+. Identify project and devices from inventory
+. Log into F5 PRE/PRO into Local Traffic -> Network Map
+. Type the device names and fetch:
+* DNS namings
+* Virtual IP address
+* Virtual Servers names
+. Log into Firewall:
+* `change context DMZ`
+** `show nat | include <Virtual IP address>` 
+** Fetch the public IP and remove it
+** `show access-list | i <10.256.x.x>`
+** Identify and remove all of them
+** If they can't be removed check by ACL's line and get the object-group: `show access-list | i line <number>` (You can use the IP block section to remove a single IP from the object-group)
+* `change context FRONTEND` 
+** `show access-list | i <10.256.x.x>`
+** Identify and remove all of them
+** If they can't be removed check by ACL's line and get the object-group: `show access-list | i line <number>` (You can use the IP block section to remove a single IP from the object-group)
+* `change context BACKEND` 
+** `show access-list | i <10.256.x.x>`
+** Identify and remove all of them
+** If they can't be removed check by ACL's line and get the object-group: `show access-list | i line <number>` (You can use the IP block section to remove a single IP from the object-group)
+
+=== Execute the changes
+. On BIG-IP F5: 
+* Set Virtual Server status as offline, black icon.
+* Set Nodes status as offline, black icon. 
+
+NOTE: Everything on the device must be black in order for Zabbix to stop monitoring it
+
+[start=2]
+. On excel: Striketrough the IPs and devices names in the https://seegson.sharepoint.example/sites/V-DNA/Documents/site-ip-inventory.xlsx[IP table]
+* Track the new freely available Public IPs, 203.0.113.x in the Tab and comment what they were used for, if there were any
+
+[start=3]
+. Log on vCenter MIL-ISE920 10.30.207.9, from chrome EAG
+. Find the devices and shut them down. Keep them offline one week and than delete them
+. Send an e-mail to change.manager@seegson.example, vendor.engineer@contractors.seegson.example, netsec.lead@seegson.example, ops.lead@seegson.example, with vendor.pm@contractors.seegson.example, service.manager@seegson.example and gabriele.saronni@seegson.example in Cc asking to remove them from backup and patching schedule
+. If we don't own the DNS, please point them to the https://seegson.sharepoint.example/sites/V-DNA[seegson.example DNS] team
+
+=== Monitoring
+
+. send an e-mail to project.owner@seegson.example, dl-another-whynot@seegson.example  with vendor.pm@contractors.seegson.example, service.manager@seegson.example and gabriele.saronni@seegson.example in Cc asking to remove them from monitoring
+
+<<<
+
+== Anexes 
+
+=== Procedure Examples
+
+==== CM for ACL 
+
+Mail in inbox: -> Re: 100104 Implementation of AWSLayer to IPLAN (Sevastopol)
+
+```
+Ciao,
+In allegato una communication matrix che mi hanno spedito per il Progetto Sevastopol da implementare su IT_CSP_TRANSIT (RT 10001:10002 both IM & EX),
+
+Ho aperto a IP Design il per il 100105 controllo del routing.
+Non necessita di NAT 
+```
+
+IMPORTANT: If NAT is needed go to the ASA section regarding the actions 
+
+
+.CM example
+image::exampleCM.png[image,width=596,height=228]
+
+.Once checked where the VRF arrives inside the Network Scheme, go to check the first routers `ASR 9K` and the `Nexus 5K`
+```Cisco
+RP/0/RSP0/CPU0:MIL-RT900#sh rpl prefix-set | i IT_CSP_TRANSIT
+Wed Oct  5 15:04:46.511 CEST
+prefix-set pfx_IT_CSP_TRANSIT_toPE
+prefix-set pfx_IT_CSP_TRANSIT_fromPE
+
+Cisco Nexus 5000 
+MIL-SW904# sh ip prefix-list ?
+  <CR>
+  >                      Redirect it to a file
+  >>                     Redirect it to a file in append mode
+  WORD                   Name of prefix-list (Max Size 63)
+  static-DSL_DATA        Known prefix-list name
+  static-EITO_PROD       Known prefix-list name
+  static-ITDCC           Known prefix-list name
+  static-IT_CSP_TRANSIT  Known prefix-list name
+  static-MGMT            Known prefix-list name
+  static-SERVICE_CTP     Known prefix-list name
+  static-TRUSTED_S2S     Known prefix-list name
+  static-UNTRUSTED_U2S   Known prefix-list name
+  |                      Pipe command output to filter
+
+MIL-SW904#sh ip prefix-list static-IT_CSP_TRANSIT
+ip prefix-list static-IT_CSP_TRANSIT: 2 entries
+   seq 5 permit 10.50.160.0/20
+   seq 10 permit 10.30.173.0/22
+```
+* As seen before, the prefix are configured. Follow the procedure for each of them in the corresponding section in the ASR 9000 and Nexus 5000
+* Go to the `MIL-FW900-1` (firewall) and add in each context the new route -> this might depend on the route you are pointing. This hop goes from IT_CSP_TRANSIT up to DMZ
+
+.In case you need to add routes inside ASA contexts
+```Cisco
+MIL-FW900-1/MGMT/pri/act# ch co B
+MIL-FW900-1/BACKEND/pri/act# sh route | i 100.66.182.173
+S        100.66.182.173 255.255.255.255 [1/0] via 192.168.28.1, IT_CSP_TRANSIT
+```
+
+.The service comes from 192.168.28.1 (IT_CSP_TRANSIT). That route is added to the context  
+```Cisco
+MIL-FW900-1/BACKEND/pri/act# conf t
+MIL-FW900-1/BACKEND/pri/act(config)# route IT_CSP_TRANSIT NEEDED IP + SUBNET MASK + ROUTE 
+MIL-FW900-1/BACKEND/pri/act(config)# wr
+```
+
+.The same procedure is added in each context, addig the corresponding route in the prior command
+```Cisco
+MIL-FW900-1/BACKEND/pri/act# sh route
+MIL-FW900-1/BACKEND/pri/act# sh route | i FRONT
+S-       0.0.0.0 0.0.0.0 [1/0] via 192.168.65.1, FRONT-BACK
+MIL-FW900-1/BACKEND/pri/act(config)# ch c F
+MIL-FW900-1/FRONTEND/pri/act(config)#
+MIL-FW900-1/FRONTEND/pri/act# sh run | i route
+route DMZ-FRONT 0.0.0.0 0.0.0.0 192.168.64.1 1
+route FRONT-BACK 10.0.0.0 255.0.0.0 192.168.65.3 1
+MIL-FW900-1/FRONTEND/pri/act# conf t
+MIL-FW900-1/FRONTEND/pri/act(config)# route FRONT-BACK 198.51.100.17 255.255.255.240 192.168.65.3
+MIL-FW900-1/DMZ/pri/act(config)# route DMZ-FRONT 198.51.100.17 255.255.255.240 192.168.64.
+```
+
+<<< 
+
+== SysAdmin Info: System administrator notes and configurations
+== Commands 
+=== Linux Commands 
+
+https://www.die.net/[Bash Manual]  
+https://www.gnu.org/software/bash/manual/bash.html[Official Book]
+
+[cols="10%,90%"]
+|===
+|Manual |Syntax
+
+.2+.^|https://linux.die.net/man/1/find[find] 
+|find [-H] [-L] [-P] [-D debugopts] [-Olevel] [path...] [expression] 
+m|find / -name *.crt
+
+.2+.^|https://linux.die.net/man/8/debugfs[debugfs] 
+|debugfs [ -Vwci ] [ -b blocksize ] [ -s superblock ] [ -f cmd_file ] [ -R request ] [ -d data_source_device ] [ device ] 
+m|debugfs /dev/hda13
+
+.2+.^|https://linux.die.net/man/1/df[df] 
+|df [OPTION]... [FILE]... 
+m|df -h
+
+.2+.^|https://linux.die.net/man/1/mv[mv] 
+|mv [OPTION]... SOURCE... DIRECTORY 
+|
+
+.2+.^|https://linux.die.net/man/1/cp[cp] 
+|cp [OPTION]... [-T] SOURCE DEST 
+|
+
+.2+.^|https://linux.die.net/man/1/scp[scp] 
+|scp [[user@]host1:]file1 ... [[user@]host2:]file2 
+m|scp sev-s231:alpha.txt /home/ansysad
+
+.2+.^|https://linux.die.net/man/1/ssh[ssh] 
+|ssh [user@]host1 m|ssh sev-s231
+
+.2+.^|https://linux.die.net/man/1/grep[grep] 
+|grep [OPTIONS] PATTERN [FILE...] 
+|
+
+.2+.^|https://linux.die.net/man/8/userdel[userdel] 
+|userdel [options] [LOGIN] 
+|
+
+.2+.^|https://linux.die.net/man/1/unzip[unzip] 
+|unzip [-Z] [-cflptTuvz[abjnoqsCDKLMUVWX$/:^]] file[.zip] [file(s) ...] [-x xfile(s) ...] [-d exdir] 
+m|unzip file.zip
+
+.2+.^|https://linux.die.net/man/5/passwd[passwd] 
+|passwd [-k] [-l] [-u [-f]] [-d] [-e] [-n mindays] [-x maxdays] [-w warndays] [-i inactivedays] [-S] [--stdin] [username] 
+|passwd [options] [LOGIN]
+
+.2+.^|https://linux.die.net/man/1/gunzip[gunzip] 
+|gzip [ -acdfhlLnNrtvV19 ] [-S suffix] [ name ... ] 
+|
+
+|===
+
+TIP: Get needed info on commands using `--help`, `-h` or `man` cmd
+
+<<<
+
+==== SunOS Commands 
+
+https://docs.oracle.com/cd/E19641-01/802-1930-1M/802-1930-1M.pdf[SunOS Manual]
+
+===== Diagnostic Commands
+
+[cols="50%,25,25%"]
+|===
+|Command |Description |Impact
+
+|`zfs list`
+|Lists ZFS filesystems, volumes, and snapshots
+|Show only - displays filesystem information
+
+|`zfs list -o name,used,avail,refer,mountpoint,quota`
+|List ZFS datasets with specific properties
+|Show only - displays detailed filesystem information
+
+|`zfs list -t snapshot`
+|List all ZFS snapshots
+|Show only - displays snapshot information
+
+|`zfs list -o name,used -s used`
+|List ZFS datasets sorted by space usage
+|Show only - helps identify large space consumers
+
+|`zfs list -r -o name,used,refer,compressratio`
+|List ZFS datasets with compression details
+|Show only - shows space efficiency
+
+|`beadm list`
+|List boot environments
+|Show only - displays bootable system snapshots
+
+|`zpool list`
+|Display zpool statistics
+|Show only - shows pool size and utilization
+
+|`zpool status rpool`
+|Display detailed zpool status
+|Show only - shows health and configuration
+
+|`du -hs /*`
+|Display disk usage by top-level directories
+|Show only - helps identify large directories
+
+|`df -h`
+|Display filesystem space usage
+|Show only - shows mounted filesystem space
+|===
+
+<<<
+
+===== Modification Commands - Use With Caution
+
+[cols="30%,35,35%"]
+|===
+|Command |Description |Impact
+
+|`zfs destroy dataset_name`
+|Remove a ZFS dataset
+|*Potentially destructive* - permanently deletes the specified dataset
+
+|`zfs destroy -r dataset_name`
+|Recursively remove a ZFS dataset
+|*Potentially destructive* - removes dataset and all descendants
+
+|`zfs set quota=size dataset_name`
+|Set a space limit on a dataset
+|Low risk - limits future growth but doesn't delete data
+
+|`zfs destroy snapshot_name`
+|Remove a snapshot
+|Low risk if snapshot isn't in use - frees snapshot space
+
+|`zoneadm -z zonename reboot`
+|Reboot a zone
+|*Causes downtime* - interrupts all services in the zone
+
+|`beadm create new_be`
+|Create a new boot environment
+|Low risk - creates a bootable system snapshot
+
+|`beadm activate be_name`
+|Set the default BE for next boot
+|*May affect next boot* - changes which system is loaded at startup
+
+|`beadm destroy be_name`
+|Delete a boot environment
+|*Potentially destructive* - removes a bootable system snapshot
+
+|`zpool upgrade pool_name`
+|Upgrade ZFS pool version
+|*May affect compatibility* - pool can't be imported on older systems after upgrade
+|===
+
+<<<
+
+===== Safe Space Recovery Commands for This System
+
+[cols="50%,25,25%"]
+|===
+|Command |Description |Impact
+
+|`zfs set quota=300G rpool/zone/sev-s213`
+|Set quota on sev-s213 zone
+|Safe - prevents zone from consuming more space
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-0`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-1`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-2`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-3`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-4`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-5`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-6`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-7`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-8`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-9`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+|===
+
+<<<
+
+===== DANGER - High-Risk Commands
+
+[cols="60%,20,20%"]
+|===
+|Command |Description |Impact
+
+|`zfs destroy rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-10`
+|Remove the active ZBE
+|*EXTREMELY DESTRUCTIVE* - will crash the zone and cause data loss
+
+|`zfs destroy -r rpool/zone/sev-s213`
+|Remove entire zone filesystem
+|*EXTREMELY DESTRUCTIVE* - deletes entire zone and all data
+|===
+<<<
+
+=== Windows Comands 
+
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/?view=powershell-7.3[Powershell Manual]
+
+[cols="15%,90%"]
+|===
+|Manual |Syntax 
+
+.2+.^|https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/route_ws2008[route] 
+|route [/f] [/p] [<command> [<destination>] [mask <netmask>] [<gateway>] [metric <metric>]] [if <interface>]] 
+m|route add 192.168.10.0 mask 255.255.255.0 192.168.1.1
+
+.2+.^|https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/cc771865(v=ws.11)[Net User] 
+|net user [<UserName> {<Password> \ *} [<Options>]] [/domain] 
+m|net user username password /add
+
+.2+.^|https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.3[Get-ChildItem] 
+|Get-ChildItem [[-Path] <string[]>] [[-Filter] <string>] [-Include <string[]>] [-Exclude <string[]>] [-Recurse] [-Depth <uint>] [-Force] [-Name] [<CommonParameters>]
+m|Get-ChildItem -Path "C:\YourFolderPath"
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/copy-item?view=powershell-7.1[Copy-Item]
+|Copy-Item [-Path] <string[]> [-Destination] <string> [-Container] [-Force] [-Recurse] [-PassThru] [-Filter <string>] [-Include <string[]>] [-Exclude <string[]>] [-Credential <pscredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
+m|Copy-Item -Path "C:\Source\File.txt" -Destination "D:\Destination"
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-process?view=powershell-7.1[Get-Process]
+|Get-Process [[-Name] <string[]>] [-Id <int[]>] [-FileVersionInfo] [-Module] [-InputObject <Process[]>] [<CommonParameters>]
+m|Get-Process winword, explorer \| Format-List *
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-service?view=powershell-7.1[Get-Service]
+|Get-Service [[-Name] <string[]>] [-RequiredServices] [-DependentServices] [-ComputerName <string[]>] [-Exclude <string[]>] [-Include <string[]>] [<CommonParameters>]
+m|Get-Service -Name "win*" -Exclude "WinRM"
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-service?view=powershell-7.1[Start-Service]
+|Start-Service [-Name] <string[]> [-DisplayName <string[]>] [-InputObject <System.ServiceProcess.ServiceController[]>] [-PassThru] [-Verbose] [-WhatIf] [-Confirm] [<CommonParameters>]
+m|Start-Service -Name Quartz
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/stop-service?view=powershell-7.1[Stop-Service]
+|Stop-Service [-Name] <string[]> [-DisplayName <string[]>] [-InputObject <System.ServiceProcess.ServiceController[]>] [-PassThru] [-Verbose] [-WhatIf] [-Confirm] [<CommonParameters>]
+m|Stop-Service -Name Quartz
+
+|===
+
+TIP: You can look at all aliases with `alias` or with a specific command like: +
+Get needed info on commands using `Get-Help <cmd>`
+
+```powershell
+alias ls
+
+CommandType     Name                                               Version    Source
+-----------     ----                                               -------    ------
+Alias           ls -> Get-ChildItem
+```
+
+==== vCenter Snippets
+
+```powershell
+Connect-VIServer -Server 10.75.124.11 -User root -Password YouWish -Force
+New-VMHostAccount -Id "VCentConnect" -Password "GuessIT!" -Description "SomeDescription"
+New-VIPermission -Entity (Get-Folder ha-folder-root) -Principal "VCentConnect" -Role Admin
+Get-VIPermission
+
+Get-VIAccount
+Get-VIRole
+Get-VIPermission
+
+Role                      Principal       Propagate IsGroup
+----                      ---------       --------- -------
+Admin                     vpxuser         True      False
+Admin                     dcui            True      False
+Admin                     root            True      False
+
+New-VMHostAccount -Id "VCentConnect" -Password "GuessIT!" -Description "SomeDescription"
+New-VIPermission -Entity (Get-Folder ha-folder-root) -Principal "VCentConnect" -Role Admin
+#Set-VIPermission -Entity (Get-Folder ha-folder-root) -Principal "VCentConnect" -Role Admin
+
+Disconnect-VIServer -Server 10.75.124.11 -Confirm:$false
+```
+
+<<<
+
+== Remote Shell Login
+.mil-ansible-01
+* Become ansysad: `sudo su - ansysad`
+* `ssh <DNS or IPaddress>`
+
+NOTE: As of 20230523 all machines should be connected to Ansible
+
+.mil-nms117
+* `ssh -T -o StrictHostKeyChecking=no <IPaddress> 'cmd <neededCommand>'`
+* `ssh -T -o StrictHostKeyChecking=no <IPaddress> 'powershell <neededCommand>'`
+* `sftp <IPaddress>`
+
+== RDP login
+
+> If you're lucky you can access it locally from Seegson laptop, from run dialog (win+r) and type `mstsc`
+
+* Log into EAG and open Remote Desktop Connection Manager or MobaXterm
+** Create a new connection if necessary
+* RDP to the device with needed domain credentials
+
+TIP: Request for MobaXterm access to make the workflow faster
+
+== Allow a Device to be Reached by Remote Shell
+
+.Execute <<RDP login>>
+. Open Server Manager 
+. Go to `Tools`
+. `Computer Management`
+. Go to `Local Users and Groups` 
+. Search the user sys_kpi
+. Inside the `Properties` in members
+. `Add`
+. Select the location the server 
+. Add the Administrators group
+. Check inside `ProgramData` 
+
+NOTE: inside `C:` remember to flag show hidden folders
+
+[start=11]
+. Inside the ssh folder right click `administrators_authorized_keys` and select `Properties`
+. Choose `Security` tab 
+. `Advanced`
+. Click `Change option`
+. Select the machines as location
+. Add the group Administrators
+. Check the connection
+
+NOTE: If it doesn't work, check inside `Services`, if the ssh application is running you will have to request open the port
+
+// A video of it would be nice and more straighforward
+// What about CLI version of it?
+
+<<<
+
+== Gather Rilascio Files 
+=== RDP version
+
+TIP: From file explorer powershell can be invoked with `shit + right click`
+
+. Log into EAG
+. Open Remote Desktop Connection Manager or MobaXterm
+.. Remote Desktop Connection
+... If there's no connection: Create settings `File` > `New`
+... Create connection to `10.50.175.32` aka `sev-q001`
+... Go to `Properties` > `Local Resources`
+... Unflag `Inherit from parent`
+... Flag `Drives` (Make sure all drives are flagged)
+. Inside `Properties`
+.. `Remote Desktop Settings`: Lets you decide screensize
+.. `Logon Credentials`:  add your credentials zz + vpnpassword
+
+.Inside the machine
+* The "rilascio" files are inside `D:\FTPRoot\WAPPORTAL\ftptest`
+* Your PC should be reachable from `Y:` or `V:` network shared drive. `:\Users\zz<youruser>\` 
+* From powershell run: `Copy-Item -Path D:\FTPRoot\WAPPORTAL\ftptest\<nameOfTheFolder> -Destination Y:\Users\zz<yourUser>\Downloads -Recurse`
+
+CAUTION: Most of the times your personal files aren't reachable unless clicked from File Explorer
+
+
+=== Terminal version
+
+.From mil-nms117
+* From pans log in `mil-nms117`
+* Log as `ansysad` then `sudo su - sys_kpi`
+
+* With this user `sftp` into `10.50.175.32` aka sev-q001 usually
+** Example:
+*** `sftp://ftptest@10.50.175.32/RILASCI_PRO_DONATION/DIST-Argo-2022-12-15-S10001-Argo_Update`
+*** `sftp> get /D/FTPRoot/WAPPORTAL/ftptest/RILASCI_PRO_DONATION/DIST-Argo-2022-12-15-S10001-Argo_Update/*zip`
+* Return `ansysad` 
+* move the retrieved file to ansysad home folder: `sudo mv /home/sys_kpi/*zip /home/ansysad` 
+* Go back to mil-ansible-01
+* Get the file to pans folder: `scp mil-nms117:Filename.zip .`
+
+// Ansible could help
+
+<<<
+
+== User Management 
+=== Windows 
+
+.Create
+* Create user `ssh -T -o StrictHostKeyChecking=no X.X.X.X 'cmd /c net user /create <userName>'`
+* net user <username> <password> /add
+
+.Delete
+* Check if user exists `ssh -T -o StrictHostKeyChecking=no X.X.X.X 'cmd /c net user <userName>'`
+* Delete user `ssh -T -o StrictHostKeyChecking=no X.X.X.X 'cmd /c net user /delete <userName>'`
+
+// Ansible would be more straightforward
+
+Check RDP Users: `net localgroup "Remote Desktop Users"`
+Add RDP Users: `net localgroup "Remote Desktop Users" /add <username>`
+
+=== Linux 
+
+==== Create and delete
+
+.Create as root
+```bash
+useradd -m -c "Added by Sysadmin" -g users $user
+passwd $user
+chage --mindays 1 $user 
+chage --warndays 5 $user
+chage --maxdays 90 $user
+```
+
+// Ansible would be more straightforward
+
+.Delete as root
+* Check if user exists `grep -c userName /etc/passwd`
+* Delete user `userdel userName`
+
+==== Reset and unblock
+
+.As root
+* Check if user exists: `grep -i userName /etc/passwd`
+* Check user status: `passwd -s userName`
+** Is it blocked?: `passwd -u userName`
+* Reset password: `passwd userName`
+
+- `-s`: This command displays information about the user account
+- `-u`: It re-enables the account if it has been previously locked due to excessive login failures or other reasons.
+
+==== Expiracy Date 
+
+.As root for Suse and Unix Systems
+* To change the date to never expire: `chage -M -1 userName` or `chage -I -1 -m 0 -M 99999 -E -1 userName`
+** To check the status inside SunOS: `chage -l userName` or `grep -ni userName /etc/passwd`
+** To check the status inside Suse: `id userName`
+
+.As Root for SunOS
+* To change the date to never expire: `passwd -x -1 userName`
+
+NOTE: To check the RSA key `cat /home/sys_kpi/.ssh/authorized_keys`
+
+// some level of automation would be nice, even macros could do
+
+==== Application Users
+
+.As root for RHEL
+`chage -E -1 -m 0 -M 99999 -I -1 -W -1 userName`
+
+* `-E -1:` Sets the account expiration date to "never."
+* `-m 0`: Sets the minimum number of days between password changes to 0.
+* `-M 99999`: Sets the maximum number of days between password changes to a very large number, effectively making it never expire.
+* `-I -1`: Sets the inactive (locked) period to "never."
+* `-W -1`: Sets the warning period to "never."
+
+.As root for SunOS
+`passwd -x -1 -N userName`
+
+* `-x -1`: This part of the command sets the maximum number of days a password is valid to -1, effectively disabling password expiration.
+* `-N`: This option is used to clear the password aging information for the specified user, which further ensures that there are no password expiration settings in place.
+
+==== Restablish RSA keys for a user 
+.Unblock the user as root 
+
+* Generate RSA Keys
+** Log in as the required user.
+** Check if the `.ssh` folder exists. If not, create it using `mkdir .ssh`.
+** Navigate into the `.ssh` folder.
+** Generate the RSA key pair by running:
+ ```
+ ssh-keygen -t rsa -b 4096 -C "username@yourDomain.com"
+ ```
+** When prompted, choose the default location to save the key pair by pressing Enter.
+** For the passphrase, leave it blank and press Enter.
+
+* Add Public Key to Authorized Keys
+** After generating the key pair, two files are created: `id_rsa` (private key) and `id_rsa.pub` (public key).
+** Append the public key to the `authorized_keys` file using:
+ ```
+ cat id_rsa.pub >> authorized_keys
+ ```
+
+* Adjust Permissions
+** Ensure correct permissions for security:
+ ```
+ chmod 700 ~/.ssh
+ chmod 600 authorized_keys
+ ```
+
+IMPORTANT: Please reply to the request and send the private key in a separate email to the requester. 
+
+== Add sys_kpi to mil-nms117
+* If it does not exist, create `sys_kpi` user and add it to `Administrator and remote desktop users` group
+* Install `freeSSHd.exe` package with Admin user.
+* Create the txt file name it `sys_kpi` and copy & paste the following key inside it:
+
+```txt
+ssh-rsa AAAA<public-key-material> sys_kpi@mil-nms117
+```
+
+* Copy the text file to the following location: `C:\Program Files (x86)\freeSSHd`
+* Run freesshd management console from desktop icon
+** Create `sys_kpi` user as shown in the figure:
+
+image::sysadmin1.png[image,width=298,height=114]
+
+** Click on `apply` and test the connection from mil-nms117. 
+** Run `ssh -T -o StrictHostKeyChecking = no IPserverwindows 'cmd / c net user'`
+** If the key exchange does not work, restart `freesshd` service
+
+.Workaround
+* If the ssh command returns `//` without the machine name:
+** Stop the freesshd service and set it manually
+** Start the management console from the link on the desktop
+** Start ssh from the server status tab 
+
+image::sysadmin2.png[image,width=298,height=114]
+
+<<< 
+
+== Disk Space Activity
+
+=== Windows GUI
+
+. Get https://www.diskanalyzer.com/download[WizTree] portable
+. Copy the zip into the needed device
+. Attach screenshots to the mail
+
+=== Commands Reference
+
+.Unix means works on both RHEL and SunOS
+[cols="11%,89%"]
+|===
+|OS |Command
+
+|RHEL    m|du -h
+|RHEL    m|du -h -d1 / \| sort -hr \| head -n 10
+|SunOS   m|zfs list
+|SunOS   m|zpool list
+|SunOS   m|du -hs *`
+|SunOS   m|du -hs * \| grep G
+|SunOS   m|du -d 1 -k / \| sort -rn \| head -n 10
+|SunOS   m|du -d 1 -ks / \| sort -rn \| head -n 10
+|SunOS   m|du -h \| sort -r \| head -n 10
+|SunOS   m|du -d 1 -k / \| awk '{size=$1/1000000; printf "%.2f MB\t%s\n", size, $2}' \| sort -rn \| head -n 10
+|SunOS   m|du -d 1 -ks / \| awk '{size=$1/1000000; printf "%.2f MB\t%s\n", size, $2}' \| sort -rn \| head -n 10
+|Unix    m|find / -type d -size +10G
+|Unix    m|du -d1 --block-size=1G / \| awk '$1 > 10'
+|Unix    m|du -h -d1 / \| sort -hr \| head -n 10
+|Windows m|Get-ChildItem -Path C:\ -Directory -Recurse \| Where-Object { $_.Length -gt 10GB }
+|Windows m|Get-ChildItem -Recurse \| sort -Descending length \| select -First 7
+|Windows m|Get-ChildItem -Path C:\ -Directory -Recurse \| Where-Object { $_.Length -gt 10GB } | Remove-Item -Recurse -Force
+
+|===
+
+In case of a huge file you can look for the specific line from which they are needed: + `grep -in '2022/01' filename` or similar combinations. +
+Usually around one year worth of logs, and use the following range: `sed -i '1,14091155d' filename` where 1 is the first line and 14091155 is the first match of the above `grep` command.
+
+CAUTION: `Sed` will buffer the file. Be sure to have enough space before running it!
+
+==== Crontab issues
+
+First thing to do is to verify what's inside crontab: +
+
+. Check first root's crontab: `crontab -l`
+. Since it's usually empty you can check the specific user on the system: `crontab -l applicationUser`
+** It can be erif, jboss, jsyssrv. The latter is the most frequent. If none ask which user has to be checked
+. If you see on top of the output: "Warning - 'applicationUser' password has expired and needs to be changed"
+.. You can look up <<User Management>> 
+.. Once finished send an e-mail and ask if it's an application user that uses only rsa-keys to log and nobody uses User and Password login
+.. Once received affirmative answer you can proceed with <<Application Users>> otherwise you'll have to do this again in 90 days. 
+. Fetch the path, which statistically is `/app/applicationUser/logpath/logcleaner`
+. Check if it has execution permissions: `ls -l /path/to/the/file`
+** if not you can add them with `chmod +x /path/to/the/file`
+
+==== ZFS pool fix
+
+. Identify the global zone for the needed device. Inventory can help sometimes
+. Check allocated storage, "quota": `zfs get quota,reservation rpool/zone/sev-s0xx`
+. Check available space: `zpool list rpool` or whatever naming convention is chosen
+. If there's space raise the quota: `zfs set quota=60G rpool/zone/sev-s0xx`
+. Check actual status: `zfs get quota rpool/zone/sev-s0xx`
+. Once the cleaning has been done please shrink it back: `zfs set quota=55G rpool/zone/sev-s0xx`
+
+.Example:
+```bash
+
+sev-s164:{root}:/# df -h | grep 100
+rpool/zone/sev-s059       55G    31G     0K   100%    /zone/sev-s059
+
+sev-s164:{root}:/# zfs get quota,reservation rpool/zone/sev-s059
+NAME               PROPERTY     VALUE   SOURCE
+rpool/zone/sev-s059  quota        55G     local
+rpool/zone/sev-s059  reservation  none    local
+
+sev-s164:{root}:/# zpool list rpool
+NAME   SIZE  ALLOC   FREE  CAP  HEALTH  ALTROOT
+rpool  136G   120G  16.1G  88%  ONLINE  -
+
+sev-s164:{root}:/# zfs set quota=60G rpool/zone/sev-s059
+
+sev-s164:{root}:/# zfs get quota rpool/zone/sev-s059
+NAME               PROPERTY  VALUE  SOURCE
+rpool/zone/sev-s059  quota     60G    local
+
+sev-s164:{root}:/# zfs list rpool/zone/sev-s059
+NAME                USED  AVAIL  REFER  MOUNTPOINT
+rpool/zone/sev-s059  55.0G  5.00G  30.6G  /zone/sev-s059
+
+zfs set quota=55G rpool/zone/sev-s059
+
+```
+
+==== Infrastructure and Minicluster Machines 
+
+[cols="20%,80%"]
+|===
+|Client | Example Machines 
+
+.4+.^|Minicluster 
+|mil-srv-701mgt1 
+|mil-srv-702mgt1 
+|mil-srv-701mgt2 
+|mil-srv-702mgt2 
+
+.2+.^|Infrastruttura 
+|mil-srv-x005
+|sev-x254
+
+|===
+
+* All devices are accessible from the almighty `mil-ansible-01`
+* Minicluster needs: `oracle@mil-srv-70*` the password can be found in inventory
+
+TIP: I've already updated all the macros and with mobaXterm or RoyalTS you'll be able to login automatically. Please notify me
+
+==== Legacy 
+
+* Usually the folders are:
+```
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener/alert
+rm log_*
+
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener/trace
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener_scan_mgmt_scan1_net2/alert
+rm log_*
+
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener_scan_mgmt_scan1_net2/trace
+rm listener_scan_mgmt_scan1_net2_*
+
+listener_scan_mgmt_scan3_net2/alert
+rm log_*
+
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener_scan_mgmt_scan3_net2/trace
+rm listener_scan_mgmt_scan3_net2_*
+
+/app/oracle/diag/tnslsnr/mil-srv-x005/listener/trace
+rm listener_*
+
+```
+* Look for `diag` directory and clear the `listener` logs
+* In this case `cd /app/oracle/diag/tnslsnr/mil-srv-x005/listener/trace`
+* Keep the original listener.log and deleted the older `listener_*`
+
+// A stupid script should be made or something like `find /app/usrbck/iseusrbck/*gpg -mtime +370 -delete`
+
+After retreiving the device situation you can send an email to the group owner matching the group name against the below table
+
+<<< 
+
+== Database 
+
+=== Inventory
+
+* Inventory device is mil-nms116, 10.61.181.116
+* Log into with https://www.oracle.com/database/sqldeveloper/technologies/download/[SQLDeveloper]
+
+.Sample query
+```
+SELECT * FROM SESYS_USERS WHERE USERNAME = 'zzoperator2'
+
+DELETE FROM SESYS_USERS WHERE USERNAME = 'zzoperator3'
+```
+commit = F11
+
+
+<<<
+
+==  ICMF Application Restart
+
+In increasing order the used servers are sev-x356, 57v, 58v, 59v, 60v, and 61v, will be restarted.
+
+TIP: In case the process refuses to stop you can `ps aux | grep <name>` and `kill -9`
+
+=== sev-x356
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,30%,20%"]
+|===
+|Process |Path |Command
+
+|Registry 
+.2+.^|`/app/icmf/icmf_common/bin-local` 
+|`./registry.sh status`
+
+|ICMFRR
+
+|`./component.sh ICMFRR status`
+
+|NPSMB01 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMb01 status`
+|Mb01 |`/app/icmf/icmf/bin-local/` |`./component.sh Mb01 status`
+
+|===
+
+TIP: The keyword "status" from the above table can be replaced with "stop" and "start"
+
+.Kill all snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./registry.sh stop
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb01 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb01 stop
+```
+
+TIP: Killing help `ps aux | grep -e "Mb01" -e "NPSMb01"`
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./registry.sh status
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb01 status
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb01 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./registry.sh start
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb01 start
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb01 start
+```
+
+=== sev-x357
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+|NPSMb02 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMb02 status`
+|Mb02 |`/app/icmf/icmf/bin-local` |`./component.sh Mb02 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb02 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb02 stop
+```
+
+TIP: Killin help `ps aux | grep -e "Mb02" -e "NPSMb02"`
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb02 status
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb02 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb02 start
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb02 start
+```
+
+=== sev-x358
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+|NPSCn01 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSCn01 status`
+|PullCn01 |`/app/icmf/icmf/bin-local` |`./component.sh PullCn01 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn01 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PullCn01 stop
+```
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn01 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PullCn01 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn01 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PullCn01 start
+```
+
+=== sev-x359
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+|NPSCn02 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSCn02 status`
+|PushCn03 |`/app/icmf/icmf/bin-local` |`./component.sh PushCn03 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn02 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PushCn03 stop
+```
+
+.Status snippet
+```bash
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn02 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PushCn03 status
+```
+
+.Start snippet
+```bash
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn02 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PushCn03 start
+```
+
+=== sev-x360
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="20%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+
+|NPSMemDB1a .2+.^|`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMemDB1a status`
+|NPSPr01 |`./component.sh NPSPr01 status`
+
+|PushMemDB1a .5+.^|`/app/icmf/icmf/bin-local` |`./component.sh PushMemDB1a status`
+|PushPr01 |`./component.sh PushPr01 status`
+|PushMemDB2b |`./component.sh PushMemDB2b status`
+|PullMemDB1a |`./component.sh PullMemDB1a status`
+|PullPr01 |`./component.sh PullPr01 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1a stop
+./component.sh NPSPr01 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1a stop
+./component.sh PushPr01 stop
+./component.sh PushMemDB2b stop
+./component.sh PullMemDB1a stop
+./component.sh PullPr01 stop
+```
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1a status
+./component.sh NPSPr01 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1a status
+./component.sh PushPr01 status
+./component.sh PushMemDB2b status
+./component.sh PullMemDB1a status
+./component.sh PullPr01 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1a start
+./component.sh NPSPr01 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1a start
+./component.sh PushPr01 start
+./component.sh PushMemDB2b start
+./component.sh PullMemDB1a start
+./component.sh PullPr01 start
+```
+
+=== sev-x361
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="20%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+
+|NPSMemDB1b .2+.^|`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMemDB1b status`
+|NPSPr02 |`./component.sh NPSPr02 status`
+
+|PushMemDB1b .5+.^|`/app/icmf/icmf/bin-local` |`./component.sh PushMemDB1b status`
+|PullMemDB1b |`./component.sh PullMemDB1b status`
+|PushMemDB2a |`./component.sh PushMemDB2a status`
+|PushPr02 |`./component.sh PushPr02 status`
+|PullPr02 |`./component.sh PullPr02 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1b stop
+./component.sh NPSPr02 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1b stop
+./component.sh PullMemDB1b stop
+./component.sh PushMemDB2a stop
+./component.sh PushPr02 stop
+./component.sh PullPr02 stop
+```
+
+TIP: Killin help `ps aux | grep -e "Mb02" -e "NPSMb02"`
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1b status
+./component.sh NPSPr02 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB2a status
+./component.sh PushMemDB1b status
+./component.sh PushPr02 status
+./component.sh PullMemDB1b status
+./component.sh PullPr02 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1b start
+./component.sh NPSPr02 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB2a start
+./component.sh PushMemDB1b start
+./component.sh PushPr02 start
+./component.sh PullMemDB1b start
+./component.sh PullPr02 start
+```
+
+> 20230705 I can make custom macro for the checks
+
+// Script needed. Let's start from bash and move to ansible. 
+
+<<<
+
+== DWH Activity
+
+[cols="17h,~"]
+|===
+|Kelland |Machines 
+
+|PRE |sev-q203
+
+|PROD a| 
+* MIL-SRV-Q021
+* MIL-SRV-Q022
+|===
+
+=== For the User Creation:
+
+* Enter https://servicehelp.seegson.example/[IUAM]
+
+* Go to New Account Request and select for Competence Area `Cloud & OSS Operation` and platform `FastDelivery - Kelland` as shown below:
+
+image::userCreationforDWH1.png[image,width=596,height=228]
+
+* Then select the profile, in profile list press `ODI` and for the user pick `Operativa and Operativa_STG` as shown in the image: 
+
+image::userCreationforDWH2.png[image,width=596,height=228]
+
+* The last step will be to select your Personal Account and give a motivation that will be `Fastdelivery Operations`
+
+<<<
+
+=== Setting up the ODI Connection
+
+NOTE: This is a one time set up
+
+==== ODI Studio
+
+* Once inside the server open File Explorer and go to this path `C:\Oracle\Middleware\Oracle_home` press continue as administrator.
+* Open ODI studio, Press `Connect to Repository`, it will prompt a tab called Repository Connection Information, 
+** In some cases the ODI might ask to specify the folder, select Browse and follow this path `C:\Progarm Files\Java\jdk*` select the folder press OK, once the ODI is opening it will show a tab where you press NO.
+* We will proceed to configure it with the following info, Press `Connect to work Repository` and follow:
+
+.Oracle Data Integrator Connection
+
+* Login Name -> identifies the connection, it can be called as you wish. 
+* User -> zz<youruser> 
+* Password -> Use the one assigned 
+
+.Database Connection
+ 
+* User -> `ODIPROD_ODI_REPO`
+* Password -> Use the one given
+* Driver List: `Oracle JDBC Driver`
+* Driver Name: `oracle.jbdc.OracleDriver`
+* URL: `jdbc:oracle:thin:@mil-srv-7-scan:1521/ASCVI_SRV`
+ 
+.Work Repository 
+
+* Select the option Work Repository and press the search buttom then select the `WORKREP` option and press OK, it will prompt one last choice to store the info inside ODI press, select the second option `store password without secure wallet`
+
+* Final result should be like the image below:
+
+image::odiConnection.png[image,width=596,height=228]
+
+<<<
+
+==== Oracle SQL Developer
+
+IMPORTANT: once you have added the correct info test the connection no more than once for each session
+
+* Press the green cross to the left to create a new session, you will do this twice for `ascvi` and `dwhvi`: 
+* Set the Name of the session as `ascvi`
+** Username `dwhsvi` and insert psw given, select the option safe password.
+** Hostname is `mil-srv-q7-scan.int.seegson.example`, port `1521`, and service name `ASCVI_SRV`
+** Final result should be like the image below:
+
+image::ascviSession.png[image,width=596,height=228]
+
+* Set the Name of the session as `dwhvi`
+** Username `dwhsvi` and insert psw given, select the option safe password.
+** Hostname is `mil-srv-q7-scan.int.seegson.example`, port `1521`, and service name `DWHVI_SRV`
+** Final result should be like the image below:
+
+image::dwhviSession.png[image,width=596,height=228]
+
+<<<
+
+== Get_Users IUAM update monthly
+
+This activity involves mil-nms117 from `sys_kpi` user under the path `AccountReconciliation_GetUsers/AccountReconciliation`.  
+
+TIP: `cd Acc <Tab>`
+
+This script will log into all the devices that in inventory has "Ade" "Yes" flag and takes notes of the accounts inside. +
+With the no option that log stays local in the machine, with the flag yes it's converted into a csv and pushed into IUAM machine.
+
+It has to be done monthly by hand:
+
+* You **cannot** put it at crontab 
+* You **cannot** use `nohup` or `screen` or any hang option
+
+It must be run the first friday of the month in order to get the month change in the output.
+
+* If the first friday of the month is not the first day of the month
+
+IMPORTANT: The script must be executed manually and the session must be kept logged on. All commands start from the `/home/sys_kpi/AccountReconciliation_GetUsers/AccountReconciliation` because `./Get_Users` script location
+
+=== Test weekly friday
+
+To test the situation use the following commands:
+
+.You can use history to get the command: `ctrl+R no` should return the command
+```bash
+./GetUsers.sh  "Fast Delivery" "ade" "cron" "query/cron.sql" "no"
+./GetUsers.sh  "SE SysAdmin" "ade" "cron" "query/cron.sql" "no"
+```
+
+NOTE: As 20230804 FastDelivery takes around 5m and SE SysAdmin takes 1h. + 
+As 20230825 FastDelivery takes around 5m and SE SysAdmin takes 1h40m
+
+Check the output:
+```bash
+ls -1 output/Fast_Delivery/cron/ade/yyyymmdd.HH/tmp
+ls -1 output/SE_SysAdmin/cron/ade/yyyymmdd.HH/tmp
+```
+
+Send an email to: manager2@contractors.seegson.example; colleague@weyland-yutani.example; colleague@seegson.example; vendor.engineer@contractors.seegson.example
+
+With Cc: boss@contractors.seegson.example; boss2@weyland-yutani.example; manager@weyland-yutani.example; gabriele.saronni@seegson.example; noc.engineer@seegson.example
+
+The mail subject will be: https://weeknumber.com/[weeknumber] - Get_Users - TEST - ADE 
+
+The mail body will be: +
+Here FastDelivery anomalies: +
+`ls -1 AccountReconciliation/output/Fast_Delivery/cron/ade/yyyymmdd.HH/tmp` +
+Here SESysAdmin anomalies: +
+`ls -1 AccountReconciliation/output/SE_SysAdmin/cron/ade/yyyymmdd.HH/tmp`
+
+Now fetch the attachments, they need to be renamed as `csv` and downloaded:
+
+.As sys_kpi from mil-nms117
+```bash
+cp AccountReconciliation_GetUsers/output/Fast_Delivery/cron/ade/yyyymmdd.HH/result/systems.accounts yyyymmdd_FD.csv
+cp AccountReconciliation_GetUsers/output/SE_SysAdmin/cron/ade/yyyymmdd.HH/result/systems.accounts yyyymmdd_SA.csv
+```
+
+> delete any `csv` leftover from previous runs
+
+=== Production, every first friday of the month
+To execute it
+
+.You can use history to get the command: `ctrl+R yes` should return the command
+```bash
+./GetUsers.sh  "Fast Delivery" "ade" "cron" "query/cron.sql" "yes"
+./GetUsers.sh  "SE SysAdmin" "ade" "cron" "query/cron.sql" "yes"
+```
+
+.Check the output:
+```bash
+ls AccountReconciliation/output/Fast_Delivery/cron/ade/yyyymmdd.HH/tmp
+ls AccountReconciliation/output/SE_SysAdmin/cron/ade/yyyymmdd.HH/tmp
+```
+
+NOTE: As 20230804 FastDelivery keeps the same elapsed time while instead SysAdmin 40m
+
+> The last output line should be an scplike output confirming the file has been pushed successfully
+
+`Account-OS-SESysAdmin_ADE_yyyymm.csv                                                                                                                    100%  966KB 965.6KB/s   00:00`
+
+==== Extra trimming
+
+* FastDelivery: `sed -i '/connection/d' Account-OS-Fast_Delivery_ADE_202404.csv` (sed -i '/;connection/d' )
+* SeSysAdmin: 
+** `cd ~/AccountReconciliation_GetUsers/output/SE_SysAdmin/cron/ade/20240405.06/result`
+** `sed -i '/Comando\|completato\|con\|per\|utente/d' system.accounts`
+** `egrep -iwf ../../../../../../iuam_hosts.lst systems.accounts > Account-OS-SESysAdmin_ADE_202404.csv`
+** `awk -F';' '{print $1}' system.accounts | sort -u | wc -l`
+
+NOTE: As of 20240408 Fastdelivery has: 188 and SysAdmin 956 lines 
+
+==== In case of erros:
+
+* Destination folder: `ssh sysadmin_sftp@10.40.225.176 ls -l /ACFSdisk/iuam_ade`
+* expected output: `/ACFSdisk/iuam_ade`
+
+In case the file is not there: you need to upload them manually:
+
+* Account-OS-Fast_Delivery_ADE_yyyymm.csv
+* Account-OS-SESysAdmin_ADE_yyyymm.csv
+
+if csv not present:
+
+```bash
+cd /home/sys_kpi/AccountReconciliation_GetUsers/output/SE_SysAdmin/cron/ade/yyyymmdd.hh/result
+
+cp systems.accounts Account-OS-SESysAdmin_ADE_yyyymm.csv
+scp Account-OS-SESysAdmin_ADE_yyyymm.csv sysadmin_sftp@10.40.225.176:/ACFSdisk/iuam_ade
+
+cd /home/sys_kpi/AccountReconciliation_GetUsers/output/Fast_Delivery/cron/ade/yyyymmdd.hh/result
+
+cp systems.accounts Account-OS-Fast_Delivery_ADE_yyyymm.csv
+scp Account-OS-Fast_Delivery_ADE_yyyymm.csv sysadmin_sftp@10.40.225.176:/ACFSdisk/iuam_ade
+
+ssh sysadmin_sftp@10.40.225.176 ls -l /ACFSdisk/iuam_ade
+```
+
+.Warn the team to run again the process
+Send an e-mail to: DL-ServiceHelp@seegson.example;
+With Cc: boss2@weyland-yutani.example; manager@weyland-yutani.example
+
+```
+
+potete proseguire con la lavorazione:
+
+ssh sysadmin_sftp@10.40.225.176 ls -l /ACFSdisk/iuam_ade
+-rw-rw-rw- 1 sysadmin_sftp   sftp_ade        379669 Feb 23 17:59 Account-OS-Fast_Delivery_ADE_202402.csv
+-rw-rw-rw- 1 sysadmin_sftp   sftp_ade        930697 Feb 23 17:58 Account-OS-SESysAdmin_ADE_202402.csv
+```
+
+<<<
+
+== Periodic Process Restart
+
+.Example request
+```
+Buongiorno,
+per forzare il ripristino della connessione verso la coda oracle, 
+si richiede di eseguire il restart con utenza "jsyssrv" del componente "logicmm" sui due nodi "sev-s245 e sev-s246".
+Grazie
+```
+
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* log as the requested user, "jsyssrv"
+* Run a `find / -name <indicated_service>*` to find service path. Usually something like `path_to_service/bin/`
+* Verify service status with one of the following `./service.sh check` or `./service.sh status` 
+** Check if the service has the following commands available; `./service.sh restart`, `./service.sh stop`, `./service.sh graceful-restart`
+** You can run `./service.sh` without commands in order to discover possibilities
+
+.If there's no stop command or it refuses to die
+* Determine the PID (Process ID) using `ps aux | serviceName`
+* Kill it: `kill -9 PID`
+* Restart service `./service.sh start`
+** Repeat the process in all the requested servers
+* Reply to the request
+
+<<<
+
+=== Restore All Services On Servers
+.Example request
+```
+Good Morning,
+We have observed that since XXX yesterday ALL services on XXX servers have stopped working as if a kill of all processes was done.
+
+Could you please provide an audit and turn all services back on?
+Grazie
+```
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* Inside the path `/var/tmp/` check the owner of the script named `ossXXX_start_all.sh`
+* Log as the requested user and run the script named `ossXXX_start_all.sh` 
+
+=== Transaction manager
+
+.Example request
+```
+Buongiorno,
+a seguito di questo allarme vi chiedo di provvedere a fare il restart del transactionmanager del nodo sev-s245
+Grazie
+```
+
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* The server is listed this time: sev-s245
+** Beware that this is twin with sev-s246
+* log as the requested user, in this case it's not told but it's `jsyssrv`
+* The steps are the following
+
+CAUTION: Log as `jsyssrv` from `ansysad` user. In case you log from moba sessions, type `exit` or ctrl+d to revert back to ansysad from root
+
+```
+sudo su - jsyssrv
+cd /app/jsyssrv/jboss-as-7.1.1.Final/bin/
+./transactionmanager.sh stop
+./transactionmanager.sh start
+```
+
+if you encounter the following:
+```
+jsyssrv@sev-s246:/app/jsyssrv/jboss-as-7.1.1.Final/bin# ./transactionmanager.sh start
+
+[INFO] - Checking transactionmanager status
+[INFO] - PID file trovato (6002) - Verifico se c'Ã¨ un processo di transactionmanager attivo
+[WARN] - Questa istanza di transactionmanager sembra essere ancora attiva
+[WARN] - Aspetta ancora qualche secondo prima di tentare un riavvio
+[ALERT] - Se invece sei proprio sicuro di cosa stai facendo, esegui: kill -9 6002 6045
+```
+
+Run the suggested command: `kill -9 6002 6045` which is different every time
+
+> It is most likely that after confirming the restart on sev-s245 another mail will follow asking for the same activity on sev-s246
+
+<<<
+
+=== Comms Barring
+
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+** sev-s256
+** sev-s257
+** sev-s258
+* become `su - Comms Barring`
+* The path is: `/app/barringws/fsb/Comms Barring`
+* Run `./barringws stop`
+* Run `./barringws start`
+
+<<<
+
+=== King Kong FDCGW
+
+.Example request
+```
+Ciao,
+
+dopo il patching di questa mattina  il processo Kong risulta spento.
+Potete forzare un update del servizio ?
+Collegarsi su un nodo di docker ( mil-srv-x006 o mil-srv-x007 ) con l’utenza jsyssrv e dare il comando
+docker service update fdcgw_kong
+Se non funziona provate a eseguire questa procedura:
+docker service scale fdcgw_kong=0
+docker service scale fdcgw_kong=1
+docker service scale fdcgw_kong=2
+
+Nota:
+Per verificare che sia tutto a posto  potete usare il comando: `docker service ls`
+
+Dovrebbe mostrare 2 istanze di fdcgw_kong attive
+```
+
+* The server can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* Log into either of the asked ones but don't do the activity on both
+* **Don't** use `docker service update fdcgw_kong`
+* Run the other commands direcly one after the other
+* Check with `docker service ls`
+
+<<<
+
+=== Restart Agent inside ODI Devices
+
+.Example request
+```
+Ciao,
+Venerdì scorso non ci siamo accorti che con il ripristino della MIL-SRV-Q021 non si è provveduto a riattivare l’agente ODI oraclediagent1.
+Si chiede quindi di provvedere il prima possibile.
+```
+
+* Log inside the required server or servers from EAG 
+* From Command Prompt go inside this path `C:\Oracle\Middleware\Oracle_Home\user_projects\domains\base_domain\bin`
+* Run this command `startComponent.cmd OracleDIAgent1`
+* You will be asked to insert a password regading the Node Manager Oracle ODI MIL-SRV-ODI01 and MIL-SRV-ODI02, stored inside the inventory
+
+NOTE: Remember the agents are: OracleDIAgent1 - MIL-SRV-Q021 and OracleDIAgent2 - MIL-SRV-Q022
+
+<<<
+
+=== Restart ERIF LEGACY
+
+.If you are not already, log in with the erif utility
+
+* Enter inside the "ER_IF" directory: `cd /app/erif/ER_IF`
+** Stop ERIF Legacy: `./jbctl -c stop -e it -s settings_solaris.sh` 
+** Start ERIF Legacy: `./jbctl -c start -e it -s settings_solaris.sh`
+
+NOTE: Nodes are sev-s250-sev-s251-sev-s252-sev-s253-sev-s254-sev-s255
+
+=== Restart kplexgw 
+
+.If you are not already, log in with the jboss utility
+
+* Enter inside the "kplexgw" directory: `cd /app/jboss/wildfly-18.0.1.Final_Kplex/bin`
+** Stop kplexgw: `./kplexgw.sh stop`
+
+IMPORTANT: The stopping process typically lasts between 5 to 15 minutes. To ensure it has stopped, simply rerun the previous command. 
+
+** Start kplexgw: `./kplexgw.sh start` 
+
+NOTE: Nodes are sev-s259-sev-s260. Restart one at a time 
+
+== Nostromo Activities and Updates
+
+.Mail Object: Seegson - NostromoCare - Request - Aggiornamento Report Nostromo
+
+```
+Request's description:
+
+Good morning,
+At the customer's request, to make a new report visible, we kindly ask you to perform the following update on the production database:
+
+use IM_1_HintIntranet
+update [RES-02L-] set rpt_profili= '111, 144, TLCC, 997, 172' where I_ID = 10000001
+
+Thank you.
+
+```
+* Log inside the required server or servers from EAG, usually indicated in the mail
+* Open Microsoft SQL Server Management Studio
+* You will be asked to log in as a user, in this case use 'sa' and insert the password
+* Open the Databases folder, and once inside do right click inside the `IM_1_HintIntranet` database, select new query
+* Once it opens the SQLQuery, paste the script given, select all, and press Execute.
+
+<<<
+
+== Airlock Updates 
+
+.Mail Object: Seegson Applicazione Airlock - change
+
+```
+Request's description:
+Impacted URLs:
+airlock.seegson.example
+
+Impacted services:
+Seegson Airlock
+
+Machines impacted:
+sev-x262
+
+Request Description:
+== STEP #1 - Back-up filesystem.
+Make backups
+
+== STEP #2 - Downloading updates.
+Download the attached package tda-registry_update.zipper
+
+== STEP #3 - Update filesystem for change Seegson root implementation.
+Copy the contents of the tda-registry_update.zip per package (where directories and files are already properly organized) to the /app/Seegson/tda-registry folder where the application is installed
+
+== STEP #4 - Clearing Cache.
+Empty the contents of the folder to follow by running the command:
+rm -rf /app/Seegson/tda-registry/var/cache/twig/*
+
+== STEP #5 - Vendor-side testing.
+Notify successful execution of STEP #3 and wait for confirmation from the vendor before concluding the change
+```
+.Backup
+* From EAG open Egde Browser, using the https://10.30.207.9/[vmware vCenter]
+* In the search bar type `sev-x262`
+* Once the info is displayed, go to actions, take snapshots and make a snapshot of the machine
+
+IMPORTANT: if there are older snapshots regarding this activity delete them
+
+* Control that the process is completed
+
+.Update
+* Log inside the required server `sev-x262`
+* As `root` copy the files in the correspondent folder
+** Example: 
+```
+cp -o /home/ansysad/tda-registry_update/lib/User/UserController.php /app/Seegson/tda-registry/lib/User/
+cp -o /home/ansysad/tda-registry_update/scripts/DeactivateUsers.php /app/Seegson/tda-registry/scripts/
+```
+
+* Clear the cache with the command indicated 
+* Answer the mail saying that the activity is completed
+
+{author} {email} & {author_2} {email_2}
