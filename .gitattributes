@@ -1,0 +1,2 @@
+# Count AsciiDoc in the language bar (Linguist treats it as prose and hides it by default)
+*.adoc linguist-detectable=true
