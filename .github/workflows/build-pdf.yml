@@ -1,0 +1,60 @@
+# Builds the runbook PDF from the AsciiDoc source.
+#
+# - On every push to main and every pull request that touches the docs,
+#   the PDF is built and attached to the workflow run as an artifact.
+# - On a version tag (v1.9.0, ...) the PDF is also attached to a GitHub
+#   Release, which is the stable download link.
+#
+# The PDF is never committed: the AsciiDoc source is the single source of
+# truth and the PDF is a build output, exactly like a compiled binary.
+
+name: Build PDF
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'docs/**'
+      - 'scripts/build-pdf.sh'
+      - '.github/workflows/build-pdf.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'scripts/build-pdf.sh'
+      - '.github/workflows/build-pdf.yml'
+  workflow_dispatch:   # "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write      # needed only by the release step
+
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install Asciidoctor PDF
+        run: gem install --no-document asciidoctor-pdf rouge
+
+      - name: Build the PDF
+        run: scripts/build-pdf.sh build
+
+      - name: Upload the PDF as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdelivery-runbook-pdf
+          path: build/fastdelivery-runbook.pdf
+          if-no-files-found: error
+
+      - name: Attach the PDF to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/fastdelivery-runbook.pdf

@@ -1,113 +1,63 @@
-# Technical Documentation & Reference Materials
+# docs-as-code-showcase
 
-A showcase of technical documentation approaches and personal reference materials. This repository demonstrates my methodology for creating clear, structured technical documentation across different formats and use cases.
+Technical documentation treated like software: AsciiDoc source under version control, built by CI into a PDF and a website, reviewed through pull requests.
 
-[![Documentation](https://img.shields.io/badge/docs-asciidoctor-red.svg)](https://asciidoctor.org/)
-[![Markdown](https://img.shields.io/badge/markdown-reference-green.svg)](https://www.markdownguide.org/)
-[![Org-mode](https://img.shields.io/badge/org--mode-documentation-77aa99.svg)](https://orgmode.org/)
+<p align="center"><img src="docs/modules/ROOT/images/fastdelivery-ducks.jpg" width="320" alt="FastDelivery"></p>
 
-## Overview
+## What this is
 
-This repository serves two purposes:
-1. **Portfolio showcase**: Demonstrates documentation skills for potential employers
-2. **Personal reference**: Quick-access cheatsheets and wikis for daily work
+**Problem.** Operations knowledge usually lives in wiki pages and Word files: unversioned, unreviewed, and out of date the week after they are written.
 
-## Original Documentation
+**Approach.** Write the documentation in plain text (AsciiDoc), keep it in Git, and let a pipeline produce every output format. A change to a procedure is a commit; a review is a pull request; a release is a tag.
 
-### 📱 ADB Cheatsheet
-**Comprehensive Android Debug Bridge reference**
+**Example.** The showcase document is a real network operations runbook that I wrote and maintained as a consultant on a multi-vendor telecom infrastructure (Cisco ASA Firepower, ASR, Nexus, ISE; F5 BIG-IP; Imperva WAF; Solaris and Linux hosts; Zabbix; Oracle). It covers day-to-day changes, certificate lifecycle, patching, monitoring and the final decommissioning.
 
-Personal cheatsheet covering ADB commands for Android device management, debugging, and automation tasks. Structured for quick lookup during development and troubleshooting.
+## Fictionalised, deliberately
 
-- **Format**: Org-mode
-- **Use Case**: Mobile device debugging and automation
-- **Scope**: Command reference, common workflows, troubleshooting
+The project has been decommissioned, and every identifier in the runbook has been replaced. Organisations, people, domains, hostnames and addresses are fictional and borrow from the *Alien* universe:
 
-📖 [View ADB Cheatsheet](adb-cheatsheet.org)
+| Role in the runbook | Name used |
+|---|---|
+| Customer (telecom operator) | Seegson Communications, `seegson.example` |
+| Consultancy running operations | Weyland-Yutani |
+| Application vendor | Kelland |
+| Third parties behind the DMZ | Hyperdyne, Lasalle |
+| Migration project | Sevastopol |
 
----
+Other people appear as roles (`noc.lead`, `change.manager`); only the author is real. IP addresses use RFC 1918 and RFC 5737 ranges and stay internally consistent, so routes, ACLs and masks in the examples still make sense. Screenshots are redacted with an OCR-driven pipeline and checked by hand. The vendors and products are real, because they are the point.
 
-### 🏢 Enterprise Telecom Infrastructure Operations
-**Internal wiki and operational procedures for telecom networks**
+## Repository layout
 
-Documentation created for FastDelivery network operations, covering enterprise-scale telecommunications infrastructure. Includes operational procedures, network topology documentation, and troubleshooting guides.
+```
+docs/modules/ROOT/
+  pages/fastdelivery-runbook.adoc   the runbook (AsciiDoc, ~3,600 lines)
+  images/                           redacted screenshots
+diagrams/fastdelivery-topology.mmd  network topology (Mermaid)
+scripts/build-pdf.sh                one command, used locally and in CI
+.github/workflows/build-pdf.yml     builds the PDF on every change
+```
 
-- **Format**: AsciiDoctor, PDF exports
-- **Scope**: Multi-vendor network operations, change management, incident response
-- **Audience**: Network operations team, system administrators
+The `docs/modules/ROOT` layout is the Antora component structure; the published site is the next step.
 
-📖 Files: `EnterpriseTelecomInfrastructuredOperatio...` (PDF exports)  
-📖 Images: Visual diagrams and network topology documentation
+## Build
 
-- ![Rulebook](./ruleBookFW.png)
+Locally:
 
----
+```sh
+gem install asciidoctor-pdf rouge
+scripts/build-pdf.sh            # writes build/fastdelivery-runbook.pdf
+```
 
-### 📚 FastDelivery Antora Documentation Site
-**Structured technical documentation using Antora static site generator**
+In CI the same script runs on every push and pull request that touches `docs/`. The PDF is attached to the workflow run as an artifact and, on a version tag, to the GitHub release. The PDF itself is never committed: the source is the single source of truth.
 
-Demonstrates modern documentation-as-code approach using AsciiDoctor and Antora. Multi-page documentation site covering network operations, procedures, and knowledge base articles.
+## Roadmap
 
-**Structure:**
-- Operational procedures (Canvass activities, instructions)
-- Network documentation (changelog, macro documentation)
-- Knowledge base (troubleshooting, system admin info)
-
-**Technology Stack:**
-- AsciiDoctor for content authoring
-- Antora for site generation
-- Version-controlled documentation workflow
-
-📖 *Antora site in progress*
-
----
-
-## Reference Cheatsheets
-
-Quick-reference materials for daily operations:
-
-| Tool | Purpose | Format |
-|------|---------|--------|
-| **VIM** | Text editor commands and workflows | Markdown |
-| **screen** | Terminal multiplexer reference | Markdown |
-| **termux** | Android terminal emulator | Org-mode |
-| **tmux** | Terminal multiplexer (advanced) | Markdown/AsciiDoctor |
-
-## Documentation Philosophy
-
-My approach to technical documentation:
-
-- **Clarity first**: Write for the person who needs answers quickly
-- **Structure matters**: Logical organization beats comprehensive chaos
-- **Multiple formats**: Choose the right tool for the audience (Markdown, AsciiDoctor, Org-mode)
-- **Living documents**: Documentation should evolve with the systems it describes
-- **Visual aids**: Diagrams and images where they add real value
-
-## Formats Used
-
-- **Markdown**: Quick references, cheatsheets, README files
-- **AsciiDoctor**: Complex technical documentation, multi-page guides
-- **Org-mode**: Personal knowledge management, Emacs workflow integration
-- **PDF**: Distribution format for formal documentation
-
-## Tools & Technologies
-
-- **Antora**: Static site generator for asciidoctor versioned documentation
-- **AsciiDoctor**: Semantic markup for technical writing
-- **Org-mode**: Plain-text knowledge management
-- **Git**: Version control for documentation-as-code
-
-## Status
-
-This repository is actively maintained and expanded as I create new reference materials and documentation projects.
+- [x] Runbook source, fictionalised and reviewed
+- [x] PDF build in CI
+- [ ] Antora site published to GitHub Pages
+- [ ] Topology diagram rendered in the build
+- [ ] Style checks (Vale) on pull requests
 
 ## Author
 
-**Gabriele Saronni**  
-Network Engineer & Technical Writer
-
-[LinkedIn](https://linkedin.com/in/gabriele-s-54514173) | [GitHub](https://github.com/gsaronni)
-
----
-
-*Documentation created from real operational experience in enterprise telecommunications and network engineering.*
+Gabriele Saronni, IT infrastructure and automation.
