@@ -20,7 +20,7 @@ set -e
 # Under GitHub Actions, turn every Asciidoctor message into an annotation
 # (visible on the run page and inline in pull requests).
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
-  grep -E '^asciidoctor: (WARNING|ERROR|FAILED)' "$LOG" | head -10 | while IFS= read -r line; do
+  (grep -E '^asciidoctor: (WARNING|ERROR|FAILED)' "$LOG" || true) | head -10 | while IFS= read -r line; do
     level=warning; echo "$line" | grep -qE 'ERROR|FAILED' && level=error
     echo "::${level}::${line}"
   done
