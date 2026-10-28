@@ -788,7 +788,7 @@ copy running-config startup-config
 |===
 |DNS |IP |Description |Version
 
-|MIL-LB515 |10.30.126.176 https://10.30.126.176[GUI] |Production Active .4+.^|15.1.10.2 Build 0.44.2
+|MIL-LB515 |10.30.126.176 https://10.30.126.176[GUI] |Production Active .5+.^|15.1.10.2 Build 0.44.2
 |MIL-LB514 |10.30.126.175 https://10.30.126.175[GUI] |Production Passive
 |MIL-LB513 |10.30.126.165 https://10.30.126.165[GUI] |PreProduction
 |mil-obm-lb1 |10.40.225.126 https://10.40.225.126[GUI] |Virtualized on https://10.40.59.19/[MIL-CFE01] F5 Pro active 
@@ -2703,7 +2703,7 @@ image::sysadmin2.png[image,width=298,height=114]
 |Unix    m|du -h -d1 / \| sort -hr \| head -n 10
 |Windows m|Get-ChildItem -Path C:\ -Directory -Recurse \| Where-Object { $_.Length -gt 10GB }
 |Windows m|Get-ChildItem -Recurse \| sort -Descending length \| select -First 7
-|Windows m|Get-ChildItem -Path C:\ -Directory -Recurse \| Where-Object { $_.Length -gt 10GB } | Remove-Item -Recurse -Force
+|Windows m|Get-ChildItem -Path C:\ -Directory -Recurse \| Where-Object { $_.Length -gt 10GB } \| Remove-Item -Recurse -Force
 
 |===
 
