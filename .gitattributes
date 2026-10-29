@@ -3,3 +3,6 @@
 # In a documentation repository, both are the actual content, so count them.
 *.adoc linguist-detectable=true
 docs/** linguist-documentation=false
+
+# Shell scripts must keep LF endings, also when checked out on Windows
+*.sh text eol=lf
