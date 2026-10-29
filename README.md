@@ -55,6 +55,7 @@ diagrams/fastdelivery-topology.mmd  network topology (Mermaid)
 scripts/build-pdf.sh                PDF build, used locally and in CI
 .github/workflows/                  build-pdf.yml (PDF), publish-site.yml (GitHub Pages)
 assets/                             README images
+LICENSE, LICENSE-CODE               CC BY 4.0 (docs), MIT (code)
 ```
 
 One source, two outputs: each chapter is written once, as an Antora page, and the PDF assembler includes the same files.
@@ -82,7 +83,7 @@ In CI, every push that touches `docs/` builds the PDF (attached to the workflow 
 
 ## How this repository was made
 
-The runbook was written by hand, without AI, over the years I spent operating this infrastructure. It lived in a private wiki and grew with the work.
+The runbook was written by hand, before AI, over the years I spent operating this infrastructure. It lived in a private Git repository and grew with the work.
 
 Publishing it in 2026 was done with an AI assistant (Claude, listed as a co-author on those commits). It was used for the transplant, not the content:
 
@@ -92,6 +93,13 @@ Publishing it in 2026 was done with an AI assistant (Claude, listed as a co-auth
 - a handful of corrections the stricter PDF build exposed (two malformed tables, one wrong command flag).
 
 The procedures, the structure and the operational knowledge are mine.
+
+## Licence
+
+- Documentation, screenshots and the FastDelivery artwork: [CC BY 4.0](LICENSE). Reuse and adapt freely, with attribution.
+- Scripts and CI configuration: [MIT](LICENSE-CODE).
+
+Product names and the interfaces visible in screenshots belong to their respective vendors.
 
 ## Author
 
