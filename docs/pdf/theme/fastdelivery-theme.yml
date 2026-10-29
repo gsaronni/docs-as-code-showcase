@@ -1,0 +1,26 @@
+# FastDelivery PDF theme for Asciidoctor PDF.
+# Adapted from fastDev.yml, the theme used for the original wiki PDFs:
+# same structure (extends the default theme, coloured title page, ducks on the back cover),
+# with the FastDelivery red sampled from the artwork instead of the consultancy's branding.
+#
+# Note: hex colours must be quoted. Unquoted, YAML reads "#DA0236" as a comment and the value becomes empty.
+extends: default
+heading:
+  h2:
+    font-color: '#DA0236'
+title-page:
+  background-color: '#DA0236'
+  logo:
+    top: 8%
+  title:
+    font-color: '#FFFFFF'
+    font-style: bold
+  subtitle:
+    font-color: '#FFFFFF'
+  authors:
+    font-color: '#FFFFFF'
+  revision:
+    font-color: '#FFE3E8'
+cover:
+  back:
+    image: image:../../modules/ROOT/images/fastdelivery-ducks.jpg[fit=contain]

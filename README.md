@@ -7,9 +7,11 @@ Technical documentation treated like software: AsciiDoc source under version con
 [![Read online](https://img.shields.io/badge/read-online-0a7d5a?logo=readthedocs&logoColor=white)](https://gsaronni.github.io/docs-as-code-showcase/)
 [![Download PDF](https://img.shields.io/badge/download-runbook%20PDF-blue?logo=adobeacrobatreader)](https://github.com/gsaronni/docs-as-code-showcase/releases/latest/download/fastdelivery-runbook.pdf)
 
+**Read it online: [gsaronni.github.io/docs-as-code-showcase](https://gsaronni.github.io/docs-as-code-showcase/)** · or [download the PDF](https://github.com/gsaronni/docs-as-code-showcase/releases/latest/download/fastdelivery-runbook.pdf)
+
 [![Pages from the built PDF: cover, table of contents, a firewall procedure, an ISE procedure and an annotated F5 walkthrough](assets/runbook-preview.png)](https://github.com/gsaronni/docs-as-code-showcase/releases/latest/download/fastdelivery-runbook.pdf)
 
-<sub>Pages from the PDF that CI builds on every change: 130 pages, 37 chapters, 61 screenshots. Click to download.</sub>
+<sub>Pages from the PDF that CI builds on every change: 130 pages, 29 chapters, 61 screenshots. Click to download.</sub>
 
 ## What this is
 

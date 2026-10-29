@@ -16,7 +16,25 @@
 |1.1.1 |05/01/2023 |{author_2} |Added vim help link and DNS date update
 |1.1.2 |12/01/2023 |{author}|Added Big-Ip nodes status scheme
 |1.1.3 |19/01/2023 |{author}|Added point 12 in F5 wiki
-|1.2 to 1.4 |02-07/2023 | |Revision entries for these versions were not preserved
+|1.1.4 |25/01/2023 |{author} |Refreshed info in ISE admin psw Corrected typos in F5
+|1.2 |31/01/2023 |{author_2} |Info Added about Certificate
+|1.2.1 |06/02/2023 |{author} |Info Aggregated about Edit Mail Access File
+|1.2.2 |09/02/2023 |{author} |Proofreading DNS and Squid
+|1.2.3 |10/02/2023 |{author_2} |Minor typos and proofreading. Cut Revision history to a new file
+|1.2.4 |10/02/2023 |{author} |New firewall essential actions
+|1.2.5 |16/02/2023 |{author} |New Info Added to report.apollo.seegson.example certificate
+|1.2.6 |16/02/2023 |{author_2} |Refined report.apollo.seegson.example certificate info updated sev-x215 procedure
+|1.2.7 |23/02/2023 |{author_2} |Added CLI version for iRule association
+|1.2.9 |23/02/2023 |{author} |Incorporated info about routes in ASA & Network Verification for ASR
+|1.3 |24/02/2023 |{author} |Fixed typo in ISE
+|1.3.1 |22/03/2023 |{author} |Added info on f5, asr 9k
+|1.3.2 |08/05/2023 |{author_2} |Fixed numbering - added title page - Added F5 failover instructions
+.5+.^|1.4 .5+.^|18/05/2023 .5+.^|{author_2} d|Fixed certificate installation instructions d|Divided MTA and DNS sections d|Added DNS, Proxy, F5, ASA, Nexus, ISE, Zabbix, VMWare, ASR device tables d|Corrected some title names d|Added mails at the end
+|1.4.1 |22/05/2023 |{author_2} |Added MTA smarttable instructions
+|1.4.2 |22/05/2023 |{author_2} |Realized the last edit is already in place - Added Full device table
+|1.4.2 |21/06/2023 |{author_2} |Added ISE password change example commands
+.6+.^|1.4.3 .6+.^|05/07/2023 .6+.^|{author_2} d|Reorganized User List aslmobile instructions d|Fixed typos in patching Activity d|Reformatted 3.4 Useful commands in a table d|Added CLI `sed` commands to edit DNS db.seegson.example files d|Resolved DNS master mistery d|Formatted tables
+.5+.^|1.4.4 .5+.^|12/07/2023 .5+.^|{author_2} d|Started CM template d|Moved Certificates section d|Reordered DNS d|MTA and proxy d|Added ISE backup password recovery section
 |1.5 |20/07/2023 |{author}|Edit ASR route note added, introduced change log server for ASA, reorganized NAT creation
 |1.5.1 |25/07/2023 |{author} |Fixed info inside NAT for ASA, Insert new info for 5k routes
 |1.5.2 |05/09/2023 |{author} |Fixed table for ASR BGP troubleshoothing commands
@@ -49,4 +67,5 @@
 |1.9.1 |29/10/2026 |{author} |Cover fix
 |1.10.0 |29/10/2026 |{author} |Split into chapters; Antora site
 |1.10.1 |29/10/2026 |{author} |Revision history restored back to 1.0 (2022); site navbar and footer
+|1.11.0 |29/10/2026 |{author} |Own PDF theme: FastDelivery title page and back cover
 |===
