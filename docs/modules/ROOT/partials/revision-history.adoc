@@ -69,4 +69,5 @@
 |1.10.1 |29/10/2026 |{author} |Revision history restored back to 1.0 (2022); site navbar and footer
 |1.10.2 |29/10/2026 |{author} |Own PDF theme: FastDelivery title page and back cover. Versioning rule written down
 |1.10.3 |29/10/2026 |{author} |Site accent colours matching the PDF; wider authors column in this table
+|1.10.4 |29/10/2026 |{author} |Site admonitions with the same icons and colours as the PDF
 |===

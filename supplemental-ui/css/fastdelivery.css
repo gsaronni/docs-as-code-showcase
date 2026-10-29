@@ -51,3 +51,61 @@
   color: var(--fd-red);
   border-left-color: var(--fd-red);
 }
+
+/*
+ * Admonitions with the same icons and colours as the PDF (Asciidoctor PDF default theme).
+ * The default UI shows a text badge ("CAUTION"); this replaces it with the Font Awesome 4.7
+ * glyph in a left column, separated from the text by a thin rule, as in the PDF.
+ * Font Awesome 4.7 font: SIL OFL 1.1, self-hosted in ../font/.
+ */
+@font-face {
+  font-family: "FontAwesome";
+  src: url("../font/fontawesome-webfont.woff2") format("woff2"),
+       url("../font/fontawesome-webfont.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.doc .admonitionblock td.icon {
+  position: static;
+  transform: none;
+  width: 3.25rem;
+  padding: 0.75rem 0 0.75rem 0.75rem;
+  vertical-align: top;
+  text-align: center;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.doc .admonitionblock td.icon i {
+  display: inline-block;
+  height: auto;
+  width: auto;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  filter: none;
+}
+
+.doc .admonitionblock td.icon i::after {
+  content: none;
+  display: none;
+}
+
+.doc .admonitionblock td.icon i::before {
+  font-family: "FontAwesome";
+  font-style: normal;
+  font-weight: normal;
+}
+
+.doc .admonitionblock td.icon .icon-note::before { content: "\f05a"; color: #19407c; }
+.doc .admonitionblock td.icon .icon-tip::before { content: "\f0eb"; color: #111; }
+.doc .admonitionblock td.icon .icon-warning::before { content: "\f071"; color: #bf6900; }
+.doc .admonitionblock td.icon .icon-caution::before { content: "\f06d"; color: #bf3400; }
+.doc .admonitionblock td.icon .icon-important::before { content: "\f06a"; color: #bf0000; }
+
+.doc .admonitionblock td.content {
+  border-left: 1px solid #dddddf;
+  padding-left: 1rem;
+}
