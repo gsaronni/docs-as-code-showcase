@@ -1,6 +1,6 @@
 = Seegson FastDelivery's Documentation: Day to day activities
 Gabriele Saronni <gabriele.saronni@weyland-yutani.example>; Weyland-Yutani NOC <noc@weyland-yutani.example>
-v1.11.0, 2026-10-29
+v1.10.2, 2026-10-29
 :title-page:
 :toc: 
 :sectnums:

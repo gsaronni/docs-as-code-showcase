@@ -67,5 +67,5 @@
 |1.9.1 |29/10/2026 |{author} |Cover fix
 |1.10.0 |29/10/2026 |{author} |Split into chapters; Antora site
 |1.10.1 |29/10/2026 |{author} |Revision history restored back to 1.0 (2022); site navbar and footer
-|1.11.0 |29/10/2026 |{author} |Own PDF theme: FastDelivery title page and back cover
+|1.10.2 |29/10/2026 |{author} |Own PDF theme: FastDelivery title page and back cover. Versioning rule written down
 |===

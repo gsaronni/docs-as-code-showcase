@@ -96,6 +96,18 @@ Publishing it in 2026 was done with an AI assistant (Claude, listed as a co-auth
 
 The procedures, the structure and the operational knowledge are mine.
 
+## Versioning
+
+Versions follow [Semantic Versioning](https://semver.org/), read for documentation. The rule is the one the runbook already followed in production from 2022 to 2025, now written down:
+
+| Bump | When | Examples from the history |
+|---|---|---|
+| **MAJOR** `2.0.0` | Readers must relearn how to use the document: it is replaced or reorganised so that existing links and references break | none so far |
+| **MINOR** `1.8.0` | A structural milestone: documents merged, sections reorganised, a new output, a full proofreading pass completed | 1.1 proofreading finished, 1.4 sections reorganised, 1.8 wikis merged, 1.10.0 split into chapters with the Antora site |
+| **PATCH** `1.8.3` | New or corrected content inside the existing structure: a procedure added, a fix, a typo, a link, presentation | 1.3.2 title page added, 1.6.2 F5 upgrade procedure, 1.8.4 certificate fix, 1.10.2 PDF theme |
+
+Each release is a Git tag `vMAJOR.MINOR.PATCH`, and its PDF is attached to the GitHub release. Older entries in the revision history keep their original numbers, including a few four-part versions (1.8.3.1) and one minor bump for a typo (1.3): history is not rewritten.
+
 ## Licence
 
 - Documentation, screenshots and the FastDelivery artwork: [CC BY 4.0](LICENSE). Reuse and adapt freely, with attribution.
