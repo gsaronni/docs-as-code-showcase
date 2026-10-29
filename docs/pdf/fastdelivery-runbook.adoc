@@ -10,7 +10,7 @@ v1.11.0, 2026-10-29
 :source-highlighter: rouge
 :title-logo-image: image:fastdelivery-ducks.jpg[pdfwidth=3in,align=center]
 :imagesdir: ../modules/ROOT/images
-:pdf-themesdir: theme
+:pdf-themesdir: {docdir}/theme
 :pdf-theme: fastdelivery
 
 <<<
