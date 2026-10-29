@@ -11,7 +11,7 @@ Technical documentation treated like software: AsciiDoc source under version con
 
 [![Pages from the built PDF: cover, table of contents, a firewall procedure, an ISE procedure and an annotated F5 walkthrough](assets/runbook-preview.png)](https://github.com/gsaronni/docs-as-code-showcase/releases/latest/download/fastdelivery-runbook.pdf)
 
-<sub>Pages from the PDF that CI builds on every change: 130 pages, 29 chapters, 61 screenshots. Click to download.</sub>
+<sub>Pages from the PDF that CI builds on every change: 139 pages, 29 chapters, 61 screenshots. Click to download.</sub>
 
 ## What this is
 

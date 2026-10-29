@@ -1,0 +1,53 @@
+/* FastDelivery accent for the Antora default UI, matching the PDF theme (#DA0236). */
+:root {
+  --fd-red: #da0236;
+  --fd-red-dark: #b8022d;
+}
+
+/* Navbar: red bar, white brand */
+.navbar {
+  background: var(--fd-red);
+}
+
+.navbar-brand .navbar-item,
+.navbar-brand .navbar-item:hover {
+  color: #fff;
+}
+
+.navbar-burger span {
+  background: #fff;
+}
+
+.navbar .button.is-primary {
+  background: #fff;
+  border-color: #fff;
+  color: var(--fd-red);
+}
+
+/* Desktop only: on mobile the menu opens as a white panel and keeps its dark text */
+@media screen and (min-width: 1024px) {
+  .navbar-end > a.navbar-item {
+    color: #fff;
+  }
+
+  .navbar-end > a.navbar-item:hover {
+    background: var(--fd-red-dark);
+    color: #fff;
+  }
+}
+
+/* Section headings in red, like the chapter headings in the PDF */
+.doc h2 {
+  color: var(--fd-red);
+}
+
+/* Current page in the navigation and the active entry in "Contents" */
+.nav-item.is-current-page > .nav-link {
+  color: var(--fd-red);
+  font-weight: 600;
+}
+
+.toc-menu a.is-active {
+  color: var(--fd-red);
+  border-left-color: var(--fd-red);
+}
