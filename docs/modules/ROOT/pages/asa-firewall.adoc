@@ -1,0 +1,366 @@
+= ASA Firepower Firewall
+
+.Cisco ASA
+|===
+|DNS       |IP             |Model          |ASA Version |FXOS Version | Description
+
+|MIL-FW900 |10.40.123.203 .2+.^|Firepower 4110 .2+.^|9.18.4.29 .2+.^|2.12(1.172)   |Active
+|MIL-FW901 |10.40.123.134    |Passive
+
+|===
+
+.Support
+https://mycase.cloudapps.cisco.com/case[Cisco Case] +
+https://www.cisco.com/c/en/us/td/docs/security/firepower/fxos/compatibility/fxos-compatibility.html[Cisco compatibility matrix]
+
+== Configuring ACL
+
+* This can be done with the private IP or a network plus the subnet mask  
+* To get the Private IP from powershell do: `nslookup <PublicIPaddress>` 
+* Check from where that IP will arrive:
+** From the correct MIL-FW900-1 context run: `show route <IPaddress>`
+
+.Example:
+```Cisco
+MIL-FW900-1/BACKEND/pri/act# show route 198.19.32.144
+Routing Table: BACKEND
+Routing entry for 198.19.32.0 255.255.254.0, supernet
+Known via "static", distance 1, metric 0
+Routing Descriptor Blocks:
+-192.168.25.1, via ITDCC
+Route metric is 0, traffic share count is 1
+```
+
+NOTE: This specific example was done from BACKEND context because the VFR (Virtual routing and forwarding) routes through that context
+
+=== To Add an IP
+> Also called "an opening" or "un'apertura"
+
+* Log into MIL-FW900-1
+* Check the IP source to know which context will be
+* Run the following:
+
+```Cisco
+change context <contextName>
+configuration terminal
+access-list GLOBAL_ACL extended permit <protocol> host <sourceIP> host <destinationIP> eq <port>  
+access-list GLOBAL_ACL extended permit tcp host X.X.X.X host X.X.X.X eq https  
+write
+```
+
+WARNING: Has to be repeated in needed contexts
+
+=== To Add Using a Network
+* When the mask is provided run: 
+** `access-list GLOBAL_ACL extended permit tcp 10.60.116.0 255.255.252.0 host 10.50.171.43 eq 443`  
+** `access-list GLOBAL_ACL extended permit <protocol> <sourceIP> <sourceMask> host <destinationIP> eq <port>`
+
+=== To Delete an ACL
+* Search for the ACL you need to erase using: `show access-list | include x.x.x.x`
+* Put `no` in front of the line. 
+** Example: `no access-list GLOBAL_ACL extended permit tcp 10.60.116.0 255.255.252.0 host 10.50.171.43 eq 443`
+
+.In Case of Errors check:
+* the contexts routing table 
+* the Network Scheme
+* if all the involving teams where contacted, such as the Naples site team
+
+=== ACL using object-group
+* There are some cases where you will add the source IP to an `object-group` that compress all the destination IPs. 
+** Example: `access-list GLOBAL_ACL extended permit tcp host 10.61.181.117 `object-group objN-MgmT-Net eq 22`  
+** In this case we have a server that wants to reach an IP inside MGMT context where there is an `object-group` containing all the IPs `object-group network objN-MgmT-Net`
+* To search an `object-group` run `show object-group | include <keyWordOrIp>` from the needed context, then use the `<line number>` to find the object-group.
+
+IMPORTANT: Remember to search in all contextes.
+
+=== Access Control List Additional Info
+NOTE: You can find additional informations https://www.Cisco.com/c/en/us/td/docs/security/asa/asa96/configuration/firewall/asa-96-firewall-config/access-acls.html#ID-2069-0000011a[here]
+
+* An e-mail request will start the procedure
+* If the `object-group` is not mentioned it has to be retrieved
+** From `10.30.207.78 2022/MIL-FW900` most recent backup run `grep <ipAddress/KeyWord> 2022/MIL-FW900/<mostRecent>`
+** From `10.30.207.78 2022/MIL-FW900` most recent backup open it with mobaXterm or download it and with `ctrl+f <ipAddress/KeyWord>`
+* Configure the ACL inside the DMZ context like explained above with correct `object-group`, in the example is objN-VPN-Kelland and the correspondent IP
+** Example: `access-list GLOBAL_ACL extended permit tcp `object-group` *objN-VPN-Kelland* host x.x.x.x eq https`
+
+TIP: In case you need to find the Private IP or just want to corroborate info run from powershell while in VPN Seegson and logged-in ASA `nslookup <FQDN>` (Fully Qualified Domain Name)
+
+CAUTION: The inverted flux is not permitted: `access-list GLOBAL_ACL line 5493 extended permit tcp host 10.50.170.39 `object-group` objN-VPN-Kelland eq https (hitcnt=0) 0x4b4e153c`
+
+== Block IP from Firewall
+. Connect to MIL-FW900 firewall via `ssh 10.40.123.141`
+. Change context to DMZ: `MIL-FW900-1/MGMT/sec/act# changeto context DMZ`
+. Create group with the objects that needs to be blocked:
+
+```Cisco
+MIL-FW900-1/DMZ/sec/act# configuration terminal
+MIL-FW900-1/DMZ/sec/act(config)# object-group network CNG_DD_MM_YYYY
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# network-object host x.x.x.x
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# network-object host y.y.y.y
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# exit
+```
+
+[start=4]
+. Select macro-group IP_DENY_container: (config-network-object-group)
+* `object-group network IP_DENY_container`
+. Add the blocked IP group to the macro-group: (config-network-object-group)
+* `group-object CNG_DD_MM_YYYY`
+. Verify: 
+* Check if IPs are added correctly to the object-group: `show object-group id CNG_05_04_2022`
+* Check if the object-group is in the IP_DENY_container: 
+** `show object-group id IP_DENY_container | i CNG_DD_MM_YYYY`
+. Save the configuration: `write memory`
+
+.Example
+```Cisco
+MIL-FW900-1/DMZ/sec/act(config)# object-group network CNG_04_03_2021
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# network-object host 198.51.100.1
+network-object host 198.51.100.2
+network-object host 198.51.100.3
+network-object host 198.51.100.4
+network-object host 198.51.100.5
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# exit
+MIL-FW900-1/DMZ/sec/act(config)# object-group network IP_DENY_container
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# group-object CNG_04_03_2021
+MIL-FW900-1/DMZ/sec/act(config-network-object-group)# exit
+MIL-FW900-1/DMZ/sec/act(config)# show object-group id IP_DENY_container | i CNG_04_03_2021
+object-group network IP_DENY_container
+ group-object CNG_04_03_2021
+```
+
+== Communication Matrix (CM)
+
+[cols="25%,60%"]
+.IP owning table
+|===
+|Context |IP class
+
+.2+.^|DMZ 
+m|10.30.0.0 255.255.0.0
+m|10.50.0.0 255.255.0.0
+
+
+
+|===
+
+[cols="25%,60%"]
+.VRF table
+|===
+|Context |Virtual Routing Forwarding
+
+|ASA Firepower |DSL_DATA
+
+.2+.^|Frontend 
+|UNTRUSTED_U2S 
+|SERVICE_CTP
+
+.4+.^|Backend 
+|EITO_PROD 
+|IT_CSP_TRANSIT 
+|TRUSTED_S2S 
+|ITDCC
+
+|===
+
+> Image example needed
+
+. what lines are mine? Are always the last ones highlighted?
+=== Is it from the inside or the outside?
+
+. If the VRF is given: Check the VRF table
+.. If it's not given, start from Backend: `show route <destinationIP>`
+
+```
+MIL-FW900-1/BACKEND/sec/act# sh route 198.51.100.6
+
+Routing Table: BACKEND
+Routing entry for 198.51.100.7 255.255.255.240
+  Known via "static", distance 1, metric 0
+  Routing Descriptor Blocks:
+  * 192.168.28.1, via IT_CSP_TRANSIT
+      Route metric is 0, traffic share count is 1
+```
+
+. what questions do I need?
+. Log into ASR 
+.. Look for the prefix set: `show rpl prefix-set <VRF_NAME>`
+. Log into Nexus 5k
+.. Look for the prefix set: `show vrf <VRF_NAME>`
+
+== Essentials Firewall Actions 
+.Verify the Connection
+* Type: `show connection all | i <target IP>`
+* Verify Inbound connection flag
+
+.To Recover the VIP
+* From powershell run `nslookup <FQDN>` Ex: `nslookup it.infobyip.com`
+* Log into MIL-FW900-1 and from DMZ context run `show nat | i <publicIP>` to fetch the private IP used by F5
+
+.Access Chassis from CLI to check physical interfaces
+* Connect through SSH to the IP `10.40.123.203/4` or using the Chassis session from MobaXterm access to the ASA Chassis
+* Once inside run the following commands:
+** `connect fxos` && `sh int e1/5` (or any desired interface)
+
+.Test Connectivity of ACL implementated
+
+* Inside ASA from the needed context launch the command `ping` and enter
+* From the choices type `y`to proceed
+* Insert the target IP
+* Insert destination port
+* The option will appear Specify source type `y`to proceed
+* Insert the source IP then press enter 3 times to proceed with the test 
+
+```Cisco
+MIL-FW900-1/DMZ/pri/act# ping
+TCP Ping [n]: y
+Interface: DMZ-FRONT
+Target IP address: 10.62.214.30
+Destination port: [80] 22
+Specify source? [n]: y
+Source IP address: 10.63.62.24
+Source port: [0]
+Repeat count: [5]
+Timeout in seconds: [2]
+Type escape sequence to abort.
+Warning! Specified source interface DMZ-FRONT is different
+than expected source interface LEGACY-PRE!
+Sending 5 TCP SYN requests to 10.50.170.30 port 22
+from 10.61.18.24, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 1/1/1 ms
+```
+* For the `packet-tracer` command
+** Type input, insert the interface, the protocol, then the IP source, select the port number or protocol, Enter the destination address, and select the port number or protocol. as the example below:
+
+```Cisco
+MIL-FW900-1/DMZ/pri/act# packet-tracer input DMZ-FRONT tcp 10.70.19.24 7194 10.71.214.30 22 detailed
+Result:
+input-interface: DMZ-FRONT
+input-status: up
+input-line-status: up
+```
+
+== Firewall capture
+WARNING: Mind disk space, when using `capture`, with `max buffer`
+
+. Connect to the firewall `MIL-FW900-1 10.40.123.141`
+. Switch to needed context Ex: `MIL-FW900-1/MGMT/sec/act# changeto context DMZ`
+. Run: `capture <name> type raw-data {trace buffer | circular-buffer} interface <int> match <protocol> <sourceIP> <destinationIP> <port>`
+
+.Example output
+```Cisco
+capture ADE type raw-data interface APPLICATION-BACK circular-buffer [Capturing * 524259 bytes]
+match tcp host 10.50.174.17 any4 eq 27017
+```
+
+TIP: For more info on Using Packet Capture to troubleshoot: https://community.Cisco.com/t5/security-documents/asa-using-packet-capture-to-troubleshoot-asa-firewall/ta-p/3256889[MIL-FW900-1 Firewall]
+
+== NAT in ASA FirePower
+
+TIP: For any doubts consult https://www.practicalnetworking.net/stand-alone/cisco-asa-nat/#autonat[NAT Configuration Guide]
+
+=== AUTO NAT
+* Create an `object network` for a private IP inside a NAT
+* Check from which interface comes the IP `show route X.X.X.X`
+* From `Configuration terminal` run:
+* Create the object network as shown in the example below: 
+
+.Example: from `10.50.171.76` map a `203.0.113.115`
+```
+conf t 
+object network obj-10.50.171.76 
+host 10.50.171.76
+```
+* Then configure the nat inside the object network 
+```
+nat (LEGACY-PRE,DSL_DATA) static 203.0.113.115 no-proxy-arp
+```
+
+IMPORTANT: Remember to check and update the IP table and CM if it's available
+
+=== Type 2 NAT
+
+.Create an `object-network` for a private IP inside a NAT
+```Cisco
+configuration terminal 
+MIL-FW900-1/DMZ/pri/act(config)# object network host-10.30.173.9
+MIL-FW900-1/DMZ/pri/act(config-network-object)# host 10.30.173.3
+exit
+```
+
+.Localize the VRF of origin and destination
+```
+MIL-FW900-1/DMZ/pri/act(config)# nat (internal interface, external interface) source static host-198.51.100.8 host-198.51.100.8 destination static host-198.51.100.9 host-10.30.173.9
+```
+
+.Define a specific NAT rule for translating source and destination IP addresses
+```
+nat (internal interface, external interface) source static host-198.51.100.8 host-198.51.100.8 destination static host-198.51.100.9 host-10.30.173.9
+```
+
+In summary, the command configures a NAT rule that keeps the source IP address unchanged (198.51.100.8) for outbound traffic from the "internal interface." + 
+For inbound traffic through the "external interface," it translates the destination IP address 198.51.100.9 to 10.30.173.9.
+
+=== Delete an existing NAT
+
+* Select the needed network object:
+** MIL-FW900-1/DMZ/pri/act(config)# object network obj-10.50.171.153
+* Inside `conf t` run one of this 3 examples: 
+```
+MIL-FW900-1/DMZ/pri/act(config)# no object network obj-<Private IP>
+MIL-FW900-1/DMZ/pri/act(config)# no nat static <Public IP>
+MIL-FW900-1/DMZ/pri/act(config)# no nat (LEGACY*PRE,DSL_DATA) static <Public IP> no-proxy-arp(optional)
+```
+== Failover
+
+NOTE: Right now primary is in standby
+
+|===
+|IPS Primary |IPS Secondary
+
+|MIL-IX505 |MIL-IX503
+|MIL-SEC-FTD01 |MIL-SEC-SOU01
+m|MIL-FW900-1/sec/act# m|MIL-FW900-1/pri/stby#
+|===
+
+. Connect to the devices shown above
+. Change context to System: `change context system`
+. Verify: `show failover state`
+. From the standby run: `failover active`
+. Wait to reconnect and run `show failover state`
+
+== Adding Routes on the ASA
+
+* To add a Route in the Firewall use the following command `route if_name dest_ip mask gateway_ip [ distance ]`
+** Example: `route ITDCC 198.19.148.192 255.255.255.224 192.168.25.1 1`
+* Sometimes you will need to add the route from the Backend context up to DMZ. The following example shows the established routes coming from the ITDCC VRF in order:
+
+```
+From VRF to Backend
+route ITDCC X.X.X.X (destination IP) Y.Y.Y.Y (subnet mask) 192.168.25.1 1
+From Frontend to Backend -> This is established in the FE context
+route FRONT-BACK X.X.X.X (destination IP) Y.Y.Y.Y (subnet mask) 192.168.65.3 1
+From Frontend to DMZ -> This is configured in the DMZ context
+route DMZ-FRONT X.X.X.X (destination IP) Y.Y.Y.Y (subnet mask)  192.168.64.3 1
+```
+
+NOTE: The VRF can vary according to what is indicated in the mail/request or the routing in the ASR 9000
+
+== Change logging server
+
+IMPORTANT: This has to be done in all contexts, beware of the specific interface for each context
+
+* Search for the needed interface where the configuration is stablished 
+* Add the route using the command known
+* Go inside the Configuration Terminal, and then direct yourself into the interface
+* Once in there use the command: `logging host interfaceName Destination IP protocol/port` 
+
+.Example:
+```
+MIL-FW900-1/MGMT/sec/act# route FDmgmt-MGMT 10.40.213.22 255.255.255.255 10.30.123.33 1
+MIL-FW900-1/MGMT/sec/act# conf t
+MIL-FW900-1/MGMT/sec/act(config)# interface Port-channel1.2600
+MIL-FW900-1/MGMT/sec/act(config-if)#
+logging host FDmgmt-MGMT 10.40.213.22 17/12514
+wr
+```

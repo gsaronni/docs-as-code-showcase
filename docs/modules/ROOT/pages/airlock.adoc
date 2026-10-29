@@ -1,0 +1,54 @@
+= Airlock Updates
+
+.Mail Object: Seegson Applicazione Airlock - change
+
+```
+Request's description:
+Impacted URLs:
+airlock.seegson.example
+
+Impacted services:
+Seegson Airlock
+
+Machines impacted:
+sev-x262
+
+Request Description:
+== STEP #1 - Back-up filesystem.
+Make backups
+
+== STEP #2 - Downloading updates.
+Download the attached package tda-registry_update.zipper
+
+== STEP #3 - Update filesystem for change Seegson root implementation.
+Copy the contents of the tda-registry_update.zip per package (where directories and files are already properly organized) to the /app/Seegson/tda-registry folder where the application is installed
+
+== STEP #4 - Clearing Cache.
+Empty the contents of the folder to follow by running the command:
+rm -rf /app/Seegson/tda-registry/var/cache/twig/*
+
+== STEP #5 - Vendor-side testing.
+Notify successful execution of STEP #3 and wait for confirmation from the vendor before concluding the change
+```
+.Backup
+* From EAG open Egde Browser, using the https://10.30.207.9/[vmware vCenter]
+* In the search bar type `sev-x262`
+* Once the info is displayed, go to actions, take snapshots and make a snapshot of the machine
+
+IMPORTANT: if there are older snapshots regarding this activity delete them
+
+* Control that the process is completed
+
+.Update
+* Log inside the required server `sev-x262`
+* As `root` copy the files in the correspondent folder
+** Example: 
+```
+cp -o /home/ansysad/tda-registry_update/lib/User/UserController.php /app/Seegson/tda-registry/lib/User/
+cp -o /home/ansysad/tda-registry_update/scripts/DeactivateUsers.php /app/Seegson/tda-registry/scripts/
+```
+
+* Clear the cache with the command indicated 
+* Answer the mail saying that the activity is completed
+
+{author} {email} & {author_2} {email_2}

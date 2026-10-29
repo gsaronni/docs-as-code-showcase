@@ -1,0 +1,42 @@
+= Gather Rilascio Files
+
+== RDP version
+
+TIP: From file explorer powershell can be invoked with `shit + right click`
+
+. Log into EAG
+. Open Remote Desktop Connection Manager or MobaXterm
+.. Remote Desktop Connection
+... If there's no connection: Create settings `File` > `New`
+... Create connection to `10.50.175.32` aka `sev-q001`
+... Go to `Properties` > `Local Resources`
+... Unflag `Inherit from parent`
+... Flag `Drives` (Make sure all drives are flagged)
+. Inside `Properties`
+.. `Remote Desktop Settings`: Lets you decide screensize
+.. `Logon Credentials`:  add your credentials zz + vpnpassword
+
+.Inside the machine
+* The "rilascio" files are inside `D:\FTPRoot\WAPPORTAL\ftptest`
+* Your PC should be reachable from `Y:` or `V:` network shared drive. `:\Users\zz<youruser>\` 
+* From powershell run: `Copy-Item -Path D:\FTPRoot\WAPPORTAL\ftptest\<nameOfTheFolder> -Destination Y:\Users\zz<yourUser>\Downloads -Recurse`
+
+CAUTION: Most of the times your personal files aren't reachable unless clicked from File Explorer
+
+
+== Terminal version
+
+.From mil-nms117
+* From pans log in `mil-nms117`
+* Log as `ansysad` then `sudo su - sys_kpi`
+
+* With this user `sftp` into `10.50.175.32` aka sev-q001 usually
+** Example:
+*** `sftp://ftptest@10.50.175.32/RILASCI_PRO_DONATION/DIST-Argo-2022-12-15-S10001-Argo_Update`
+*** `sftp> get /D/FTPRoot/WAPPORTAL/ftptest/RILASCI_PRO_DONATION/DIST-Argo-2022-12-15-S10001-Argo_Update/*zip`
+* Return `ansysad` 
+* move the retrieved file to ansysad home folder: `sudo mv /home/sys_kpi/*zip /home/ansysad` 
+* Go back to mil-ansible-01
+* Get the file to pans folder: `scp mil-nms117:Filename.zip .`
+
+// Ansible could help

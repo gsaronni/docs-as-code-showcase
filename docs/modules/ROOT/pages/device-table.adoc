@@ -1,0 +1,53 @@
+= Network Device Table
+
+.Partial Device Table
+|===
+|Hostname |IP |Management IP |Description 
+
+|MIL-TS90 |10.20.123.131 |10.30.123.44 |Terminal Server
+
+|MIL-FW900 chassis |10.40.123.203 | |Firewall DC F&D - active
+|MIL-FW901 chassis |10.40.123.134 | |Firewall DC F&D - standbyF
+|MIL-FW900 |10.40.123.141 | .2+.^|ASA FirePower
+|MIL-FW901 |10.40.123.142 | 
+|MIL-FW900 MGMT | |10.30.123.36 .8+.^|ASA Firepower Contextes
+|MIL-FW901 MGMT | |10.30.123.37 
+|MIL-FW900 DMZ | |10.30.123.38 
+|MIL-FW901 DMZ | |10.30.123.39 
+|MIL-FW900 BACKEND | |10.30.123.40 
+|MIL-FW901 BACKEND | |10.30.123.41 
+|MIL-FW900 FRONTEND | |10.30.123.42 
+|MIL-FW901 FRONTEND | |10.30.123.43 
+
+|MIL-RT900 |10.40.123.135 |10.30.123.49 .4+.^|Router DC F&D 
+|MIL-RT901 |10.40.123.136 |10.30.123.50 
+|MIL-SW904 |10.40.123.139 |10.30.123.51 
+|MIL-SW905 |10.40.123.140 |10.30.123.52 
+
+|MIL-ISE906 | |10.30.126.135 .2+.^|Hardware ISE 
+|MIL-ISE907 | |10.30.126.136 
+|MIL-ISE909 | |10.30.207.7 .2+.^|ISE Application 
+|MIL-ISE910 | |10.30.207.8 
+
+|MIL-LB513 | |10.30.126.165 |F5 Pre bilanciatore standalone
+|MIL-LB514 | |10.30.126.175 |F5 Pro bilanciatore standby
+|MIL-LB515 | |10.30.126.176 |F5 Pro bilanciatore active
+|mil-obm-lb1 | |10.40.225.126 |Virtualized F5 Pro bilanciatore active 
+|mil-obm-lb2 | |10.40.225.123 |Virtualized F5 Pro bilanciatore standby
+
+|sev-x100| |10.50.166.100 |Proxy Active
+|sev-x222 | |10.50.166.102 |Proxy Standby 
+
+|VIP for system admin | |10.50.166.101:8080 |Proxy VIP 
+
+|mil-srv-x008 | |10.30.207.5 |DNS master 
+|sev-x101 | |10.50.166.21 .2+.^|DNS public/external
+|sev-x102 | |10.50.166.22
+|sev-x103 | |10.50.169.21 .2+.^|DNS private/internal
+|sev-x104 | |10.50.169.22 
+
+|sev-x215 | |10.50.164.114 |Certificates dump
+
+|mil-srv-x001 | |10.30.207.78 |Backup server
+
+|===

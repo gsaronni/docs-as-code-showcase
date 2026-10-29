@@ -1,0 +1,16 @@
+# Builds the documentation site: npx antora antora-playbook.yml
+site:
+  title: FastDelivery Runbook
+  url: https://gsaronni.github.io/docs-as-code-showcase
+  start_page: fastdelivery::index.adoc
+content:
+  sources:
+  - url: .
+    branches: HEAD
+    start_path: docs
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+output:
+  dir: build/site

@@ -1,0 +1,111 @@
+= DNS BIND9
+
+.DNS devices
+|===
+|DNS |IP |Role
+
+|mil-srv-x008 |10.30.207.5 |DNS master
+|sev-x101 |10.50.166.21 .2+.^|DNS Public / External
+|sev-x102 |10.50.166.22 
+|sev-x103 |10.50.169.21 .2+.^|DNS Private / Internal
+|sev-x104 |10.50.169.22 
+|===
+
+TIP: DNS System Official Documentation https://www.isc.org/bind/[BIND 9]
+
+== Insert or Delete a Record inside the server BIND 9 DNS Master (Internal sync)
+
+=== CLI
+
+* Log into `mil-srv-x008`
+* Path is: `cd /var/named/addr`
+* Check db: `grep -R <regex> *`
+
+[cols="35%,80%"]
+|===
+|Description |Commands
+
+.2+|Serial number update
+|Test: `sed -E -n "s/[0-9]\{8}/$(date +%Y%m%d)/p" ternal/db.seegson.example`
+m|sed -E -i "s/[0-9]\{8}/$(date +%Y%m%d)/" ternal/db.seegson.example
+
+.2+|Comment
+|Test: `sed -n '/bookinglearn/s/^/;/p' ternal/db.seegson.example`
+m|sed -i '/bookinglearn/s/^/;/' ternal/db.seegson.example
+
+.2+|Uncomment
+|Test: `sed -n '/\^;bookinglearn/s/^;//p' ternal/db.seegson.example`
+m|sed -i '/\^;bookinglearn/s/^;//' ternal/db.seegson.example
+
+.2+|Add a line after a specific regex pattern
+|Test: `sed -n '/regex/a\new_line' ternal/db.seegson.example`
+m|sed -i '/regex/a\new_line' ternal/db.seegson.example
+
+.2+|Add a line after a specific line number
+|Test: `sed -n '4a\bookinglearn' ternal/db.seegson.example`
+m|sed -i '4a\bookinglearn' ternal/db.seegson.example
+
+.2+|Append a line
+|Test: `sed -n '$a\bookinglearn' ternal/db.seegson.example`
+m|sed -i '$a\bookinglearn' ternal/db.seegson.example
+|===
+
+Commit changes: `rndc reload`
+
+IMPORTANT: Update serial number date on Master every time it gets modified. Otherwise it does not update the slaves.
+
+> 20230705 This does sync all the slaves!!!!!!!!!
+
+=== Monkey CLI
+
+```
+@                       86400   IN      SOA     dns1.int.seegson.example. postmaster.int.seegson.example.
+                                                2023032001      ; serial number
+                                                3600            ; refresh [1h]
+                                                600             ; retry [10m]
+                                                1209600         ; expire[14d]
+                                                3600            ; min TTL [1h]
+
+@                       86400   IN      SOA     dns1.int.seegson.example. postmaster.int.seegson.example.
+                                                2023032001      ; serial number
+                                                3600            ; refresh [1h]
+                                                600             ; retry [10m]
+                                                1209600         ; expire[14d]
+                                                3600            ; min TTL [1h]
+```
+
+.This process allows to replicate the files "DB" in the DNS to the two external and the two internal slaves sev-x101 to sev-x104
+. Log into server Master `MIL-SRV-X008` as root
+. Use `grep -R <regex> <filename/*>` to check if the info has to be added in another db
+. Edit the relative file to the zone that has to be modified. 
+  * Example: 
+  * `vi /var/named/addr/internal/<dbFileName>`
+  * `vi /var/named/addr/external/<dbFileName>`
+
+CAUTION: Do not take `vi` or `vim` https://vim.works/2019/03/03/emergency-vim-quickstart/[lightly]! Take sometime to read how to use it. https://www.adminschoice.com/vi-editor-quick-reference[Read me!]
+
+[start=4]
+. Update the Serial Number in all the db's you are working, internal, external.
+. Run `rndc reload` to restart the service and apply latest changes
+
+CAUTION: Do not execute the following process. It leads to unsynchronized slaves and loss of changes. Because if changes aren't saved in the master, once restarted it imposes its own version. 
+
+[.lead]
+[.text-center]
+The following is informative
+
+.**Ultra monkey**, single files on each slave
+. Log in the needed DNS slave sev-x101 to sev-x104
+. Go to `cd /var/named/slaves/external/`
+. Open the file with `vi <db.name>`
+. Commit changes: `service named restart`, in order to verify: `service named status`
+
+.Alternative route to DNS
+* Log into nexus 5k MIL-SW904 or MIL-SW905
+* Connect to DNS internal or External using `ssh zzoperator1@10.50.166.21 vrf <vrfName>` 
+* Gain admin privileges `sudo su - `
+* Look for needed info: `grep <regex> /var/named/slaves/internal/*`
+
+=== DNS decommission on seegson.example
+
+. To decommission a domain inside seegson.example the client must make the request in https://seegson.sharepoint.example/sites/V-DNA[V-DNA Home]

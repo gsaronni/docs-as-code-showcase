@@ -1,0 +1,92 @@
+= MTA Sendmail (Now Proofpoint)
+
+.DNS devices
+|===
+|DNS |IP |Description
+
+|mta_vs |10.50.166.19 |vIP external
+|sev-x101 |10.50.166.21 .2+.^|MTA external
+|sev-x102 |10.50.166.22 
+|mta-int_vs |10.50.166.20 |vIP internal
+|sev-x103 |10.50.169.21 .2+.^|MTA internal
+|sev-x104 |10.50.169.22 
+|===
+
+NOTE: MTA = Mail Transfer Agent, it runs on port 25 and yes, same devices as DNS
+
+> RHEL 6 configuration of https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/deployment_guide/s2-email-mta-sendmail#doc-wrapper[Sendmail]
+> Official Proofpoint https://www.proofpoint.com/us/products/email-protection/open-source-email-solution[website]
+
+== Add new Recipient
+
+. Login to the two servers, sev-x101 and sev-x102
+. `cd /etc/mail`
+. Add the new recipient: `echo "@net.seegson.example       MailSeegson:[10.50.166.20]" >> /etc/mail/smarttable`
+. Rebuild the hash database file `makemap hash /etc/mail/smarttable.db < /etc/mail/smarttable`
+. Restart the Sendmail service for the changes to take effect: `service sendmail restart`
+
+== Edit Mail Files
+
+* Files can be `/etc/mail/`: 
+** access
+** smarttable
+* Make a backup of the current `/etc/mail/<file>` as showed `cp /etc/mail/<file> /etc/mail/<file>.bak`
+* Edit the `/etc/mail/<file>`
+** https://vim.works/2019/03/03/emergency-vim-quickstart/[VIM]
+** If you need to append a line to the file you can `echo "@net.seegson.example       MailSeegson:[10.50.166.20]" >> /etc/mail/smarttable`
+* Rebuild the hash database file: `makemap hash /etc/mail/<file> < /etc/mail/<file>`
+* Restart the Sendmail service for the changes to take effect: `service sendmail restart`
+
+== Migrate MTA destination (Untested)
+
+. Install the necessary TLS libraries: `$ sudo yum install openssl openssl-devel`
+. Edit the MTA configuration file to enable TLS 1.2:
+  * If you are using Postfix, you can edit the `/etc/postfix/main.cf` configuration file and add the following lines:
+
+```bash
+smtpd_tls_security_level = may
+smtpd_tls_protocols = !SSLv2,!SSLv3,!TLSv1,!TLSv1.1, TLSv1.2
+smtpd_tls_mandatory_protocols = TLSv1.2
+smtp_tls_protocols = !SSLv2,!SSLv3,!TLSv1,!TLSv1.1, TLSv1.2
+smtp_tls_mandatory_protocols = TLSv1.2
+```
+
+  * These lines set the minimum allowed TLS protocol version to 1.2 for both incoming and outgoing connections.
+. Restart the MTA service: `$ sudo systemctl restart postfix`
+. Test the TLS configuration:
+  * TLS scanning tool like SSL Labs or Qualys SSL Labs can be used to test the TLS configuration of your MTA and check if it has valid certificates. You can also use a network sniffer like `tcpdump` to capture and analyze the network traffic between the server and the clients to verify that the traffic is encrypted with TLS.
+  * A TLS certificate is needed in order to use TLS encryption with your MTA. The certificate will be used to authenticate the server to clients and establish a secure connection.
+
+== Verify The log MTA
+
+. Connect to the machines: `sev-x101.int.seegson.example 10.50.166.21` and `sev-x102.int.seegson.example 10.50.166.22`
+
+TIP: These machines can be reached from Ansible mil-ansible-01 `10.40.59.24`
+
+[start=2]
+. Log in as root and check the logs in `/var/log/mailog-`
+. Look for needed info: `zgrep <regex> /var/log/*`
+* If needed to unzip gz files run: `gunzip maillog.1.gz`
+. The activity of each individual mail delivery is identified by a code:
+
+```log
+Mar  9 09:22:19 sev-x101 sendmail[100119]: STARTTLS=client, relay=smtp.seegson.example., version=TLSv1/SSLv3, verify=FAIL, cipher=DHE-RSA-AES256-SHA, bits=256/256
+
+Mar  9 09:22:19 sev-x101 sendmail[100119]: 2568MECF100117: to=<monitoring@hyperdyne.example>,<apollo.alerts@mail.seegson.example>, delay=00:00:00, xdelay=00:00:00, mailer=Seegson, pri=171351, relay=smtp.seegson.example. [198.51.100.14], dsn=5.0.0, stat=Service unavailable
+
+Mar  9 09:22:19 sev-x101 sendmail[100119]: 2568MECF100117: 2568MJCF100119: DSN: Service unavailable
+```
+
+or
+
+```
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqr101076: ruleset=check_rcpt, arg1=<test_qualysscan@smtpcheckqualys.smtp>, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (may beforged), reject=550 5.7.1 <test_qualysscan@smtpcheckqualys.smtp>... Relaying denied. IP name possibly forged [198.51.100.15]
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqr101076: from=<qualysscan_test@smtpcheckqualys.smtp>, size=0, class=0, nrcpts=0, proto=SMTP, daemon=MTA1-private, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (may be forged)
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqs101076: ruleset=check_rcpt, arg1=<qgmrtest%qualysguard.com@[203.0.113.120]>, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (maybe forged), reject=550 5.7.1 <qgmrtest%qualysguard.com@[203.0.113.120]>... Relaying denied. IP name possibly forged [198.51.100.15]
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqs101076: lost input channel from sn001.s01.sea01.qualys.com [198.51.100.15] (may be forged) to MTA1-private after rcpt
+
+Mar  9 09:37:32 sev-x101 sendmail[101076]: 2568bRqs101076: from=<qgmrfrom@[203.0.113.120]>, size=0, class=0, nrcpts=0, proto=SMTP, daemon=MTA1-private, relay=sn001.s01.sea01.qualys.com [198.51.100.15] (may be forged)
+```

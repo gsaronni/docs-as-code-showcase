@@ -1,0 +1,88 @@
+= ASR 9001
+
+.Cisco ASA
+|===
+|DNS |IP |Device |IOS XR |ROM
+
+|MIL-RT900 |10.40.123.135 .2+.^|Cisco ASR 9001 .2+.^|6.4.2 .2+.^|3.04
+|MIL-RT901 |10.40.123.136 
+
+|===
+
+.Support
+https://mycase.cloudapps.cisco.com/case[Cisco Case]
+
+== Add route to existing prefix
+Verify the configuration of the VRF: `show run vrf UNTRUSTED_U2S`
+
+.To configure the VRF
+```
+configuration terminal
+vrf context UNTRUSTED_U2S
+ip route X.X.X.X/X Vlan<id> IP next-hop address in format i.i.i.i
+```
+
+NOTE: You don't need to go into 'conf t' to add or remove the routes
+
+[cols="15%,90%"]
+|===
+|prefix  |cmd
+
+|see     |`show rpl prefix-set`
+|add     |`edit prefix-set pfx_ITDCC_fromPE inline add "198.19.145.32/27 le 32"`
+|remove  |`edit prefix-set pfx_ITDCC_fromPE inline remove "198.19.145.32/27 le 32"`
+|===
+
+> When PE is source: From PE // +
+> When PE is destination: To PE
+
+== Verifying the subnet of the network to add in the prefix
+* Insert the IP in the following https://ccp.seegson.example/find/network[Tool]
+* The result will indicate both the network and the subnet. 
+* If subnet on CCP tool is marked with:
+
+```
+GDC Dedicated Seegson is equal to ITDCC
+GDC Internal Shared - SEEG is equal to EITOPROD
+```
+
+== Verifying Reachability
+
+.Use the following commands to verify routing exchange and reachability informations in Border Gateway Protocol (BGP)
+|===
+|Input Command                                            |Command Description
+
+|show route                                               |Shows information about the routing table 
+|sh bgp all unicast                                       |Displays information about the BGP routing table entry
+|show bgp ipv4 unicast 10.40.227.6                       |Displays information about the BGP routing table entry for the specific IP address
+|show bgp vrf ITDCC neighbors                             |Displays information about BGP neighbors within a specific VRF
+|show bgp vrf ITDCC neighbors 10.72.37.1 received routes |Displays configuration information and statistics for BGP4 neighbors of the device for a virtual routing and forwarding (VRF) instance
+|sh bgp route + rpl_CE-PE_vrf-XXXX-IN/OUT                 |Displays information about  the current BGP routing state and the paths available for routing traffic through the network
+|===
+
+NOTE: Additional Info regarding https://docs.ruckuswireless.com/fastiron/08.0.50/fastiron*08050*commandref/GUID*B1F2522E*8575*47C6*9591*8D6966165ED9.html[BGP VRF]
+
+== Useful Commands 
+
+|===
+|Input Command                                     |Command Description
+
+|`show tech-support bcdl`                            |Displays technical support information for the BCDL module.
+|`show bdcl consumers`                               |Shows information about BDCL (Block Distributed Control Loop) consumers.
+|`show process blocked location all`                 |Shows all blocked processes and their locations.
+|`show bdf session`                                  |Displays information about the BDF (Binary Data Format) sessions.
+|`show bdf session detail`                           |Shows detailed information about the BDF (Binary Data Format) sessions.
+|`show bgp nei 198.51.100.10`                              |Displays BGP (Border Gateway Protocol) neighbors for the specified IP.
+|`show bgp vrf <name> nei 198.51.100.11`                  |Displays BGP neighbors for the specified VRF (Virtual Routing and Forwarding).
+|`show route bgp`                                    |Shows BGP (Border Gateway Protocol) routes.
+|`bgp auto-policy-soft-reset disable`                |Disables automatic soft reset for BGP.
+|`no bgp auto-policy-soft-reset disable`             |Enables automatic soft reset for BGP.
+|`bgp graceful-restart`                              |Enables graceful restart for BGP.
+|`no bgp graceful-restart`                           |Disables graceful restart for BGP.
+|`show bgp neighbor 10.73.101.1 config`               |Displays the configuration of the BGP neighbor with the specified IP.
+|`show bgp process`                                  |Shows information about the BGP process.
+|`clear bgp ipv4 multicast dampening 172.20.0.0/16`  |Clears BGP multicast dampening for the specified IPv4 address range.
+|`clear bgp external`                                |Clears external BGP (Border Gateway Protocol) sessions.
+|`clear bgp vrf vrf_A nexthop performance stats`     |Clears the performance statistics for the specified VRF nexthop.
+|`show bgp vpnv4 unicast vrf`                        |Displays BGP VPNv4 (Virtual Private Network version 4) unicast for the VRF.
+|===

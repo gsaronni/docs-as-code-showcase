@@ -1,0 +1,308 @@
+= Commands
+
+== Linux Commands 
+
+https://www.die.net/[Bash Manual]  
+https://www.gnu.org/software/bash/manual/bash.html[Official Book]
+
+[cols="10%,90%"]
+|===
+|Manual |Syntax
+
+.2+.^|https://linux.die.net/man/1/find[find] 
+|find [-H] [-L] [-P] [-D debugopts] [-Olevel] [path...] [expression] 
+m|find / -name *.crt
+
+.2+.^|https://linux.die.net/man/8/debugfs[debugfs] 
+|debugfs [ -Vwci ] [ -b blocksize ] [ -s superblock ] [ -f cmd_file ] [ -R request ] [ -d data_source_device ] [ device ] 
+m|debugfs /dev/hda13
+
+.2+.^|https://linux.die.net/man/1/df[df] 
+|df [OPTION]... [FILE]... 
+m|df -h
+
+.2+.^|https://linux.die.net/man/1/mv[mv] 
+|mv [OPTION]... SOURCE... DIRECTORY 
+|
+
+.2+.^|https://linux.die.net/man/1/cp[cp] 
+|cp [OPTION]... [-T] SOURCE DEST 
+|
+
+.2+.^|https://linux.die.net/man/1/scp[scp] 
+|scp [[user@]host1:]file1 ... [[user@]host2:]file2 
+m|scp sev-s231:alpha.txt /home/ansysad
+
+.2+.^|https://linux.die.net/man/1/ssh[ssh] 
+|ssh [user@]host1 m|ssh sev-s231
+
+.2+.^|https://linux.die.net/man/1/grep[grep] 
+|grep [OPTIONS] PATTERN [FILE...] 
+|
+
+.2+.^|https://linux.die.net/man/8/userdel[userdel] 
+|userdel [options] [LOGIN] 
+|
+
+.2+.^|https://linux.die.net/man/1/unzip[unzip] 
+|unzip [-Z] [-cflptTuvz[abjnoqsCDKLMUVWX$/:^]] file[.zip] [file(s) ...] [-x xfile(s) ...] [-d exdir] 
+m|unzip file.zip
+
+.2+.^|https://linux.die.net/man/5/passwd[passwd] 
+|passwd [-k] [-l] [-u [-f]] [-d] [-e] [-n mindays] [-x maxdays] [-w warndays] [-i inactivedays] [-S] [--stdin] [username] 
+|passwd [options] [LOGIN]
+
+.2+.^|https://linux.die.net/man/1/gunzip[gunzip] 
+|gzip [ -acdfhlLnNrtvV19 ] [-S suffix] [ name ... ] 
+|
+
+|===
+
+TIP: Get needed info on commands using `--help`, `-h` or `man` cmd
+
+<<<
+
+=== SunOS Commands 
+
+https://docs.oracle.com/cd/E19641-01/802-1930-1M/802-1930-1M.pdf[SunOS Manual]
+
+==== Diagnostic Commands
+
+[cols="50%,25,25%"]
+|===
+|Command |Description |Impact
+
+|`zfs list`
+|Lists ZFS filesystems, volumes, and snapshots
+|Show only - displays filesystem information
+
+|`zfs list -o name,used,avail,refer,mountpoint,quota`
+|List ZFS datasets with specific properties
+|Show only - displays detailed filesystem information
+
+|`zfs list -t snapshot`
+|List all ZFS snapshots
+|Show only - displays snapshot information
+
+|`zfs list -o name,used -s used`
+|List ZFS datasets sorted by space usage
+|Show only - helps identify large space consumers
+
+|`zfs list -r -o name,used,refer,compressratio`
+|List ZFS datasets with compression details
+|Show only - shows space efficiency
+
+|`beadm list`
+|List boot environments
+|Show only - displays bootable system snapshots
+
+|`zpool list`
+|Display zpool statistics
+|Show only - shows pool size and utilization
+
+|`zpool status rpool`
+|Display detailed zpool status
+|Show only - shows health and configuration
+
+|`du -hs /*`
+|Display disk usage by top-level directories
+|Show only - helps identify large directories
+
+|`df -h`
+|Display filesystem space usage
+|Show only - shows mounted filesystem space
+|===
+
+<<<
+
+==== Modification Commands - Use With Caution
+
+[cols="30%,35,35%"]
+|===
+|Command |Description |Impact
+
+|`zfs destroy dataset_name`
+|Remove a ZFS dataset
+|*Potentially destructive* - permanently deletes the specified dataset
+
+|`zfs destroy -r dataset_name`
+|Recursively remove a ZFS dataset
+|*Potentially destructive* - removes dataset and all descendants
+
+|`zfs set quota=size dataset_name`
+|Set a space limit on a dataset
+|Low risk - limits future growth but doesn't delete data
+
+|`zfs destroy snapshot_name`
+|Remove a snapshot
+|Low risk if snapshot isn't in use - frees snapshot space
+
+|`zoneadm -z zonename reboot`
+|Reboot a zone
+|*Causes downtime* - interrupts all services in the zone
+
+|`beadm create new_be`
+|Create a new boot environment
+|Low risk - creates a bootable system snapshot
+
+|`beadm activate be_name`
+|Set the default BE for next boot
+|*May affect next boot* - changes which system is loaded at startup
+
+|`beadm destroy be_name`
+|Delete a boot environment
+|*Potentially destructive* - removes a bootable system snapshot
+
+|`zpool upgrade pool_name`
+|Upgrade ZFS pool version
+|*May affect compatibility* - pool can't be imported on older systems after upgrade
+|===
+
+<<<
+
+==== Safe Space Recovery Commands for This System
+
+[cols="50%,25,25%"]
+|===
+|Command |Description |Impact
+
+|`zfs set quota=300G rpool/zone/sev-s213`
+|Set quota on sev-s213 zone
+|Safe - prevents zone from consuming more space
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-0`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-1`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-2`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-3`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-4`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-5`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-6`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-7`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-8`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+
+|`zfs destroy -r rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-9`
+|Remove unmounted ZBE
+|Safe if not mounted - removes old boot environment
+|===
+
+<<<
+
+==== DANGER - High-Risk Commands
+
+[cols="60%,20,20%"]
+|===
+|Command |Description |Impact
+
+|`zfs destroy rpool/zone/sev-s213/sev-s213/rpool/ROOT/zbe-10`
+|Remove the active ZBE
+|*EXTREMELY DESTRUCTIVE* - will crash the zone and cause data loss
+
+|`zfs destroy -r rpool/zone/sev-s213`
+|Remove entire zone filesystem
+|*EXTREMELY DESTRUCTIVE* - deletes entire zone and all data
+|===
+<<<
+
+== Windows Comands 
+
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/?view=powershell-7.3[Powershell Manual]
+
+[cols="15%,90%"]
+|===
+|Manual |Syntax 
+
+.2+.^|https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/route_ws2008[route] 
+|route [/f] [/p] [<command> [<destination>] [mask <netmask>] [<gateway>] [metric <metric>]] [if <interface>]] 
+m|route add 192.168.10.0 mask 255.255.255.0 192.168.1.1
+
+.2+.^|https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/cc771865(v=ws.11)[Net User] 
+|net user [<UserName> {<Password> \ *} [<Options>]] [/domain] 
+m|net user username password /add
+
+.2+.^|https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.3[Get-ChildItem] 
+|Get-ChildItem [[-Path] <string[]>] [[-Filter] <string>] [-Include <string[]>] [-Exclude <string[]>] [-Recurse] [-Depth <uint>] [-Force] [-Name] [<CommonParameters>]
+m|Get-ChildItem -Path "C:\YourFolderPath"
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/copy-item?view=powershell-7.1[Copy-Item]
+|Copy-Item [-Path] <string[]> [-Destination] <string> [-Container] [-Force] [-Recurse] [-PassThru] [-Filter <string>] [-Include <string[]>] [-Exclude <string[]>] [-Credential <pscredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
+m|Copy-Item -Path "C:\Source\File.txt" -Destination "D:\Destination"
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-process?view=powershell-7.1[Get-Process]
+|Get-Process [[-Name] <string[]>] [-Id <int[]>] [-FileVersionInfo] [-Module] [-InputObject <Process[]>] [<CommonParameters>]
+m|Get-Process winword, explorer \| Format-List *
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-service?view=powershell-7.1[Get-Service]
+|Get-Service [[-Name] <string[]>] [-RequiredServices] [-DependentServices] [-ComputerName <string[]>] [-Exclude <string[]>] [-Include <string[]>] [<CommonParameters>]
+m|Get-Service -Name "win*" -Exclude "WinRM"
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-service?view=powershell-7.1[Start-Service]
+|Start-Service [-Name] <string[]> [-DisplayName <string[]>] [-InputObject <System.ServiceProcess.ServiceController[]>] [-PassThru] [-Verbose] [-WhatIf] [-Confirm] [<CommonParameters>]
+m|Start-Service -Name Quartz
+
+.2+.^|https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/stop-service?view=powershell-7.1[Stop-Service]
+|Stop-Service [-Name] <string[]> [-DisplayName <string[]>] [-InputObject <System.ServiceProcess.ServiceController[]>] [-PassThru] [-Verbose] [-WhatIf] [-Confirm] [<CommonParameters>]
+m|Stop-Service -Name Quartz
+
+|===
+
+TIP: You can look at all aliases with `alias` or with a specific command like: +
+Get needed info on commands using `Get-Help <cmd>`
+
+```powershell
+alias ls
+
+CommandType     Name                                               Version    Source
+-----------     ----                                               -------    ------
+Alias           ls -> Get-ChildItem
+```
+
+=== vCenter Snippets
+
+```powershell
+Connect-VIServer -Server 10.75.124.11 -User root -Password YouWish -Force
+New-VMHostAccount -Id "VCentConnect" -Password "GuessIT!" -Description "SomeDescription"
+New-VIPermission -Entity (Get-Folder ha-folder-root) -Principal "VCentConnect" -Role Admin
+Get-VIPermission
+
+Get-VIAccount
+Get-VIRole
+Get-VIPermission
+
+Role                      Principal       Propagate IsGroup
+----                      ---------       --------- -------
+Admin                     vpxuser         True      False
+Admin                     dcui            True      False
+Admin                     root            True      False
+
+New-VMHostAccount -Id "VCentConnect" -Password "GuessIT!" -Description "SomeDescription"
+New-VIPermission -Entity (Get-Folder ha-folder-root) -Principal "VCentConnect" -Role Admin
+#Set-VIPermission -Entity (Get-Folder ha-folder-root) -Principal "VCentConnect" -Role Admin
+
+Disconnect-VIServer -Server 10.75.124.11 -Confirm:$false
+```

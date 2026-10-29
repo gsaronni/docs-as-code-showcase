@@ -3,7 +3,7 @@
 # Requires: gem install asciidoctor-pdf rouge
 set -euo pipefail
 
-SRC="docs/modules/ROOT/pages/fastdelivery-runbook.adoc"
+SRC="docs/pdf/fastdelivery-runbook.adoc"
 OUT_DIR="${1:-build}"
 LOG="$OUT_DIR/asciidoctor-pdf.log"
 

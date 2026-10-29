@@ -1,0 +1,147 @@
+= Disk Space Activity
+
+== Windows GUI
+
+. Get https://www.diskanalyzer.com/download[WizTree] portable
+. Copy the zip into the needed device
+. Attach screenshots to the mail
+
+== Commands Reference
+
+.Unix means works on both RHEL and SunOS
+[cols="11%,89%"]
+|===
+|OS |Command
+
+|RHEL    m|du -h
+|RHEL    m|du -h -d1 / \| sort -hr \| head -n 10
+|SunOS   m|zfs list
+|SunOS   m|zpool list
+|SunOS   m|du -hs *`
+|SunOS   m|du -hs * \| grep G
+|SunOS   m|du -d 1 -k / \| sort -rn \| head -n 10
+|SunOS   m|du -d 1 -ks / \| sort -rn \| head -n 10
+|SunOS   m|du -h \| sort -r \| head -n 10
+|SunOS   m|du -d 1 -k / \| awk '{size=$1/1000000; printf "%.2f MB\t%s\n", size, $2}' \| sort -rn \| head -n 10
+|SunOS   m|du -d 1 -ks / \| awk '{size=$1/1000000; printf "%.2f MB\t%s\n", size, $2}' \| sort -rn \| head -n 10
+|Unix    m|find / -type d -size +10G
+|Unix    m|du -d1 --block-size=1G / \| awk '$1 > 10'
+|Unix    m|du -h -d1 / \| sort -hr \| head -n 10
+|Windows m|Get-ChildItem -Path C:\ -Directory -Recurse \| Where-Object { $_.Length -gt 10GB }
+|Windows m|Get-ChildItem -Recurse \| sort -Descending length \| select -First 7
+|Windows m|Get-ChildItem -Path C:\ -Directory -Recurse \| Where-Object { $_.Length -gt 10GB } \| Remove-Item -Recurse -Force
+
+|===
+
+In case of a huge file you can look for the specific line from which they are needed: + `grep -in '2022/01' filename` or similar combinations. +
+Usually around one year worth of logs, and use the following range: `sed -i '1,14091155d' filename` where 1 is the first line and 14091155 is the first match of the above `grep` command.
+
+CAUTION: `Sed` will buffer the file. Be sure to have enough space before running it!
+
+=== Crontab issues
+
+First thing to do is to verify what's inside crontab: +
+
+. Check first root's crontab: `crontab -l`
+. Since it's usually empty you can check the specific user on the system: `crontab -l applicationUser`
+** It can be erif, jboss, jsyssrv. The latter is the most frequent. If none ask which user has to be checked
+. If you see on top of the output: "Warning - 'applicationUser' password has expired and needs to be changed"
+.. You can look up xref:user-management.adoc[User Management] 
+.. Once finished send an e-mail and ask if it's an application user that uses only rsa-keys to log and nobody uses User and Password login
+.. Once received affirmative answer you can proceed with xref:user-management.adoc#_application_users[Application Users] otherwise you'll have to do this again in 90 days. 
+. Fetch the path, which statistically is `/app/applicationUser/logpath/logcleaner`
+. Check if it has execution permissions: `ls -l /path/to/the/file`
+** if not you can add them with `chmod +x /path/to/the/file`
+
+=== ZFS pool fix
+
+. Identify the global zone for the needed device. Inventory can help sometimes
+. Check allocated storage, "quota": `zfs get quota,reservation rpool/zone/sev-s0xx`
+. Check available space: `zpool list rpool` or whatever naming convention is chosen
+. If there's space raise the quota: `zfs set quota=60G rpool/zone/sev-s0xx`
+. Check actual status: `zfs get quota rpool/zone/sev-s0xx`
+. Once the cleaning has been done please shrink it back: `zfs set quota=55G rpool/zone/sev-s0xx`
+
+.Example:
+```bash
+
+sev-s164:{root}:/# df -h | grep 100
+rpool/zone/sev-s059       55G    31G     0K   100%    /zone/sev-s059
+
+sev-s164:{root}:/# zfs get quota,reservation rpool/zone/sev-s059
+NAME               PROPERTY     VALUE   SOURCE
+rpool/zone/sev-s059  quota        55G     local
+rpool/zone/sev-s059  reservation  none    local
+
+sev-s164:{root}:/# zpool list rpool
+NAME   SIZE  ALLOC   FREE  CAP  HEALTH  ALTROOT
+rpool  136G   120G  16.1G  88%  ONLINE  -
+
+sev-s164:{root}:/# zfs set quota=60G rpool/zone/sev-s059
+
+sev-s164:{root}:/# zfs get quota rpool/zone/sev-s059
+NAME               PROPERTY  VALUE  SOURCE
+rpool/zone/sev-s059  quota     60G    local
+
+sev-s164:{root}:/# zfs list rpool/zone/sev-s059
+NAME                USED  AVAIL  REFER  MOUNTPOINT
+rpool/zone/sev-s059  55.0G  5.00G  30.6G  /zone/sev-s059
+
+zfs set quota=55G rpool/zone/sev-s059
+
+```
+
+=== Infrastructure and Minicluster Machines 
+
+[cols="20%,80%"]
+|===
+|Client | Example Machines 
+
+.4+.^|Minicluster 
+|mil-srv-701mgt1 
+|mil-srv-702mgt1 
+|mil-srv-701mgt2 
+|mil-srv-702mgt2 
+
+.2+.^|Infrastruttura 
+|mil-srv-x005
+|sev-x254
+
+|===
+
+* All devices are accessible from the almighty `mil-ansible-01`
+* Minicluster needs: `oracle@mil-srv-70*` the password can be found in inventory
+
+TIP: I've already updated all the macros and with mobaXterm or RoyalTS you'll be able to login automatically. Please notify me
+
+=== Legacy 
+
+* Usually the folders are:
+```
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener/alert
+rm log_*
+
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener/trace
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener_scan_mgmt_scan1_net2/alert
+rm log_*
+
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener_scan_mgmt_scan1_net2/trace
+rm listener_scan_mgmt_scan1_net2_*
+
+listener_scan_mgmt_scan3_net2/alert
+rm log_*
+
+/u01/app/grid/diag/tnslsnr/mil-srv-702db1/listener_scan_mgmt_scan3_net2/trace
+rm listener_scan_mgmt_scan3_net2_*
+
+/app/oracle/diag/tnslsnr/mil-srv-x005/listener/trace
+rm listener_*
+
+```
+* Look for `diag` directory and clear the `listener` logs
+* In this case `cd /app/oracle/diag/tnslsnr/mil-srv-x005/listener/trace`
+* Keep the original listener.log and deleted the older `listener_*`
+
+// A stupid script should be made or something like `find /app/usrbck/iseusrbck/*gpg -mtime +370 -delete`
+
+After retreiving the device situation you can send an email to the group owner matching the group name against the below table

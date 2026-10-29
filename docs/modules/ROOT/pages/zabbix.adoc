@@ -1,0 +1,45 @@
+= Zabbix
+
+.Zabbix devices
+|===
+|DNS |IP | Description
+
+|MIL-SRV-X011 |10.30.207.93 |Zabbix DB server 1
+|MIL-SRV-X012 |10.30.207.94 |Zabbix DB server 2
+|MIL-SRV-X013 |10.30.207.95 |Zabbix DB Backup
+|MIL-SRV-X014 |10.30.207.97 |Zabbix Engine / FrontEnd 1
+|MIL-SRV-X015 |10.30.207.98 |Zabbix Engine / FrontEnd 2
+|===
+
+== To dismiss Certificates in Zabbix
+
+* When you receive a request from Seegson, for info in one or more Certificates
+* Go inside the inventory:
+`Registries` -> `Certificates` -> type the name an search for it -> you get the info needed
+* Go to F5 (PRO or PRE) -> `Local Traffic` -> `Network Map` inside search for the correspondent service:
+  * With the name of the certificate do an nslookup to have the IP determine if it is private or public. Example:  
+  `nslookup vas.cc.seegson.example`
+  * If it is public from the firewall run `show nat | i <publicIP>` 
+  * With the IP go to F5 and search for it in the Virtual Server List or in Network Map type
+* If you have to dismiss one or more Certificates:  
+`Registries` -> `Certificates` -> type the name an search for it
+* Once that done change the Expire Date, X date in a thousand years and the SAN, servizio dismesso
+
+== Proactive Monitoring FastDelivery Network
+
+.Open https://10.30.207.100/index.php[Zabbix]
+image::zabix1.png[image,width=596,height=228]
+
+.Go to Tab Problems, where will be showed All Devices, in Fast Delivery:
+image::zabix2.png[image,width=596,height=228]
+
+.Then apply the filter in the Tab on the right: 
+image::zabix3.png[image,width=596,height=228]
+
+.Now you can see alarms for all the server in charge in Seegson FastDelivery.
+* Refer to only these alarms:
+** Free disk space.
+** High Memory Utilization.
+** Disk space is very low
+** Any information related to server: Big-IP Production MIL-LB515.int.seegson.example MIL-LB514.int.seegson.example
+* After performing any checks on Big-IP o other Network device, please use this template to advise our colleagues from Application side.

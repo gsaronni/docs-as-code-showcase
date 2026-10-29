@@ -4,6 +4,7 @@ Technical documentation treated like software: AsciiDoc source under version con
 
 [![Build PDF](https://github.com/gsaronni/docs-as-code-showcase/actions/workflows/build-pdf.yml/badge.svg)](https://github.com/gsaronni/docs-as-code-showcase/actions/workflows/build-pdf.yml)
 [![Latest release](https://img.shields.io/github/v/release/gsaronni/docs-as-code-showcase?label=release)](https://github.com/gsaronni/docs-as-code-showcase/releases/latest)
+[![Read online](https://img.shields.io/badge/read-online-0a7d5a?logo=readthedocs&logoColor=white)](https://gsaronni.github.io/docs-as-code-showcase/)
 [![Download PDF](https://img.shields.io/badge/download-runbook%20PDF-blue?logo=adobeacrobatreader)](https://github.com/gsaronni/docs-as-code-showcase/releases/latest/download/fastdelivery-runbook.pdf)
 
 [![Pages from the built PDF: cover, table of contents, a firewall procedure, an ISE procedure and an annotated F5 walkthrough](assets/runbook-preview.png)](https://github.com/gsaronni/docs-as-code-showcase/releases/latest/download/fastdelivery-runbook.pdf)
@@ -41,16 +42,22 @@ The topology is kept as Mermaid source in [`diagrams/`](diagrams/fastdelivery-to
 ## Repository layout
 
 ```
-docs/modules/ROOT/
-  pages/fastdelivery-runbook.adoc   the runbook (AsciiDoc, ~3,600 lines)
-  images/                           redacted screenshots
+docs/
+  antora.yml                        Antora component descriptor
+  modules/ROOT/
+    nav.adoc                        site navigation
+    pages/                          one page per chapter (29) plus the landing page
+    partials/revision-history.adoc  shared by the site and the PDF
+    images/                         redacted screenshots
+  pdf/fastdelivery-runbook.adoc     PDF assembler: header plus includes of the chapter pages
+antora-playbook.yml                 site build
 diagrams/fastdelivery-topology.mmd  network topology (Mermaid)
-assets/                             README images (PDF page previews, rendered topology)
-scripts/build-pdf.sh                one command, used locally and in CI
-.github/workflows/build-pdf.yml     builds the PDF on every change
+scripts/build-pdf.sh                PDF build, used locally and in CI
+.github/workflows/                  build-pdf.yml (PDF), publish-site.yml (GitHub Pages)
+assets/                             README images
 ```
 
-The `docs/modules/ROOT` layout is the Antora component structure; the published site is the next step.
+One source, two outputs: each chapter is written once, as an Antora page, and the PDF assembler includes the same files.
 
 ## Build
 
@@ -58,19 +65,33 @@ Locally:
 
 ```sh
 gem install asciidoctor-pdf rouge
-scripts/build-pdf.sh            # writes build/fastdelivery-runbook.pdf
+scripts/build-pdf.sh                  # PDF: build/fastdelivery-runbook.pdf
+npx antora antora-playbook.yml        # site: build/site/index.html
 ```
 
-In CI the same script runs on every push and pull request that touches `docs/`. The PDF is attached to the workflow run as an artifact and, on a version tag, to the GitHub release. The PDF itself is never committed: the source is the single source of truth.
+In CI, every push that touches `docs/` builds the PDF (attached to the workflow run, and to the release on a version tag) and publishes the site to GitHub Pages. Neither output is committed: the source is the single source of truth.
 
 ## Roadmap
 
 - [x] Runbook source, fictionalised and reviewed
 - [x] PDF build in CI
 - [x] Release with the PDF attached ([v1.9.0, GitHub Transplant](https://github.com/gsaronni/docs-as-code-showcase/releases/tag/v1.9.0))
-- [ ] Antora site published to GitHub Pages
+- [x] Antora site published to GitHub Pages (one page per chapter, shared with the PDF)
 - [ ] Topology diagram and README previews rendered in the build
 - [ ] Style checks (Vale) on pull requests
+
+## How this repository was made
+
+The runbook was written by hand, without AI, over the years I spent operating this infrastructure. It lived in a private wiki and grew with the work.
+
+Publishing it in 2026 was done with an AI assistant (Claude, listed as a co-author on those commits). It was used for the transplant, not the content:
+
+- building the fictionalisation pipeline that replaced every real name, address and identifier;
+- OCR-driven redaction of the screenshots, followed by an independent AI review that hunted for leaks and found several;
+- the CI pipeline, this README and its previews;
+- a handful of corrections the stricter PDF build exposed (two malformed tables, one wrong command flag).
+
+The procedures, the structure and the operational knowledge are mine.
 
 ## Author
 

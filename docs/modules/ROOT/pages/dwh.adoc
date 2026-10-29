@@ -1,0 +1,82 @@
+= DWH Activity
+
+[cols="17h,~"]
+|===
+|Kelland |Machines 
+
+|PRE |sev-q203
+
+|PROD a| 
+* MIL-SRV-Q021
+* MIL-SRV-Q022
+|===
+
+== For the User Creation:
+
+* Enter https://servicehelp.seegson.example/[IUAM]
+
+* Go to New Account Request and select for Competence Area `Cloud & OSS Operation` and platform `FastDelivery - Kelland` as shown below:
+
+image::userCreationforDWH1.png[image,width=596,height=228]
+
+* Then select the profile, in profile list press `ODI` and for the user pick `Operativa and Operativa_STG` as shown in the image: 
+
+image::userCreationforDWH2.png[image,width=596,height=228]
+
+* The last step will be to select your Personal Account and give a motivation that will be `Fastdelivery Operations`
+
+<<<
+
+== Setting up the ODI Connection
+
+NOTE: This is a one time set up
+
+=== ODI Studio
+
+* Once inside the server open File Explorer and go to this path `C:\Oracle\Middleware\Oracle_home` press continue as administrator.
+* Open ODI studio, Press `Connect to Repository`, it will prompt a tab called Repository Connection Information, 
+** In some cases the ODI might ask to specify the folder, select Browse and follow this path `C:\Progarm Files\Java\jdk*` select the folder press OK, once the ODI is opening it will show a tab where you press NO.
+* We will proceed to configure it with the following info, Press `Connect to work Repository` and follow:
+
+.Oracle Data Integrator Connection
+
+* Login Name -> identifies the connection, it can be called as you wish. 
+* User -> zz<youruser> 
+* Password -> Use the one assigned 
+
+.Database Connection
+ 
+* User -> `ODIPROD_ODI_REPO`
+* Password -> Use the one given
+* Driver List: `Oracle JDBC Driver`
+* Driver Name: `oracle.jbdc.OracleDriver`
+* URL: `jdbc:oracle:thin:@mil-srv-7-scan:1521/ASCVI_SRV`
+ 
+.Work Repository 
+
+* Select the option Work Repository and press the search buttom then select the `WORKREP` option and press OK, it will prompt one last choice to store the info inside ODI press, select the second option `store password without secure wallet`
+
+* Final result should be like the image below:
+
+image::odiConnection.png[image,width=596,height=228]
+
+<<<
+
+=== Oracle SQL Developer
+
+IMPORTANT: once you have added the correct info test the connection no more than once for each session
+
+* Press the green cross to the left to create a new session, you will do this twice for `ascvi` and `dwhvi`: 
+* Set the Name of the session as `ascvi`
+** Username `dwhsvi` and insert psw given, select the option safe password.
+** Hostname is `mil-srv-q7-scan.int.seegson.example`, port `1521`, and service name `ASCVI_SRV`
+** Final result should be like the image below:
+
+image::ascviSession.png[image,width=596,height=228]
+
+* Set the Name of the session as `dwhvi`
+** Username `dwhsvi` and insert psw given, select the option safe password.
+** Hostname is `mil-srv-q7-scan.int.seegson.example`, port `1521`, and service name `DWHVI_SRV`
+** Final result should be like the image below:
+
+image::dwhviSession.png[image,width=596,height=228]

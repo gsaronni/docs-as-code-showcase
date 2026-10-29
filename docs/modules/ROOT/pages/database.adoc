@@ -1,0 +1,14 @@
+= Database
+
+== Inventory
+
+* Inventory device is mil-nms116, 10.61.181.116
+* Log into with https://www.oracle.com/database/sqldeveloper/technologies/download/[SQLDeveloper]
+
+.Sample query
+```
+SELECT * FROM SESYS_USERS WHERE USERNAME = 'zzoperator2'
+
+DELETE FROM SESYS_USERS WHERE USERNAME = 'zzoperator3'
+```
+commit = F11

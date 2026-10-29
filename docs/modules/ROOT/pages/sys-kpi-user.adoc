@@ -1,0 +1,27 @@
+= Add sys_kpi to mil-nms117
+
+* If it does not exist, create `sys_kpi` user and add it to `Administrator and remote desktop users` group
+* Install `freeSSHd.exe` package with Admin user.
+* Create the txt file name it `sys_kpi` and copy & paste the following key inside it:
+
+```txt
+ssh-rsa AAAA<public-key-material> sys_kpi@mil-nms117
+```
+
+* Copy the text file to the following location: `C:\Program Files (x86)\freeSSHd`
+* Run freesshd management console from desktop icon
+** Create `sys_kpi` user as shown in the figure:
+
+image::sysadmin1.png[image,width=298,height=114]
+
+** Click on `apply` and test the connection from mil-nms117. 
+** Run `ssh -T -o StrictHostKeyChecking = no IPserverwindows 'cmd / c net user'`
+** If the key exchange does not work, restart `freesshd` service
+
+.Workaround
+* If the ssh command returns `//` without the machine name:
+** Stop the freesshd service and set it manually
+** Start the management console from the link on the desktop
+** Start ssh from the server status tab 
+
+image::sysadmin2.png[image,width=298,height=114]

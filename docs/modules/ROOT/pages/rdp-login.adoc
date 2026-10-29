@@ -1,0 +1,9 @@
+= RDP login
+
+> If you're lucky you can access it locally from Seegson laptop, from run dialog (win+r) and type `mstsc`
+
+* Log into EAG and open Remote Desktop Connection Manager or MobaXterm
+** Create a new connection if necessary
+* RDP to the device with needed domain credentials
+
+TIP: Request for MobaXterm access to make the workflow faster

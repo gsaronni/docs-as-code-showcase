@@ -1,0 +1,12 @@
+= Remote Shell Login
+
+.mil-ansible-01
+* Become ansysad: `sudo su - ansysad`
+* `ssh <DNS or IPaddress>`
+
+NOTE: As of 20230523 all machines should be connected to Ansible
+
+.mil-nms117
+* `ssh -T -o StrictHostKeyChecking=no <IPaddress> 'cmd <neededCommand>'`
+* `ssh -T -o StrictHostKeyChecking=no <IPaddress> 'powershell <neededCommand>'`
+* `sftp <IPaddress>`

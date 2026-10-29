@@ -1,0 +1,107 @@
+= User Management
+
+== Windows 
+
+.Create
+* Create user `ssh -T -o StrictHostKeyChecking=no X.X.X.X 'cmd /c net user /create <userName>'`
+* net user <username> <password> /add
+
+.Delete
+* Check if user exists `ssh -T -o StrictHostKeyChecking=no X.X.X.X 'cmd /c net user <userName>'`
+* Delete user `ssh -T -o StrictHostKeyChecking=no X.X.X.X 'cmd /c net user /delete <userName>'`
+
+// Ansible would be more straightforward
+
+Check RDP Users: `net localgroup "Remote Desktop Users"`
+Add RDP Users: `net localgroup "Remote Desktop Users" /add <username>`
+
+== Linux 
+
+=== Create and delete
+
+.Create as root
+```bash
+useradd -m -c "Added by Sysadmin" -g users $user
+passwd $user
+chage --mindays 1 $user 
+chage --warndays 5 $user
+chage --maxdays 90 $user
+```
+
+// Ansible would be more straightforward
+
+.Delete as root
+* Check if user exists `grep -c userName /etc/passwd`
+* Delete user `userdel userName`
+
+=== Reset and unblock
+
+.As root
+* Check if user exists: `grep -i userName /etc/passwd`
+* Check user status: `passwd -s userName`
+** Is it blocked?: `passwd -u userName`
+* Reset password: `passwd userName`
+
+- `-s`: This command displays information about the user account
+- `-u`: It re-enables the account if it has been previously locked due to excessive login failures or other reasons.
+
+=== Expiracy Date 
+
+.As root for Suse and Unix Systems
+* To change the date to never expire: `chage -M -1 userName` or `chage -I -1 -m 0 -M 99999 -E -1 userName`
+** To check the status inside SunOS: `chage -l userName` or `grep -ni userName /etc/passwd`
+** To check the status inside Suse: `id userName`
+
+.As Root for SunOS
+* To change the date to never expire: `passwd -x -1 userName`
+
+NOTE: To check the RSA key `cat /home/sys_kpi/.ssh/authorized_keys`
+
+// some level of automation would be nice, even macros could do
+
+=== Application Users
+
+.As root for RHEL
+`chage -E -1 -m 0 -M 99999 -I -1 -W -1 userName`
+
+* `-E -1:` Sets the account expiration date to "never."
+* `-m 0`: Sets the minimum number of days between password changes to 0.
+* `-M 99999`: Sets the maximum number of days between password changes to a very large number, effectively making it never expire.
+* `-I -1`: Sets the inactive (locked) period to "never."
+* `-W -1`: Sets the warning period to "never."
+
+.As root for SunOS
+`passwd -x -1 -N userName`
+
+* `-x -1`: This part of the command sets the maximum number of days a password is valid to -1, effectively disabling password expiration.
+* `-N`: This option is used to clear the password aging information for the specified user, which further ensures that there are no password expiration settings in place.
+
+=== Restablish RSA keys for a user 
+.Unblock the user as root 
+
+* Generate RSA Keys
+** Log in as the required user.
+** Check if the `.ssh` folder exists. If not, create it using `mkdir .ssh`.
+** Navigate into the `.ssh` folder.
+** Generate the RSA key pair by running:
+ ```
+ ssh-keygen -t rsa -b 4096 -C "username@yourDomain.com"
+ ```
+** When prompted, choose the default location to save the key pair by pressing Enter.
+** For the passphrase, leave it blank and press Enter.
+
+* Add Public Key to Authorized Keys
+** After generating the key pair, two files are created: `id_rsa` (private key) and `id_rsa.pub` (public key).
+** Append the public key to the `authorized_keys` file using:
+ ```
+ cat id_rsa.pub >> authorized_keys
+ ```
+
+* Adjust Permissions
+** Ensure correct permissions for security:
+ ```
+ chmod 700 ~/.ssh
+ chmod 600 authorized_keys
+ ```
+
+IMPORTANT: Please reply to the request and send the private key in a separate email to the requester. 

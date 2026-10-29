@@ -1,0 +1,40 @@
+= Seegson FastDelivery: Operations Runbook
+:description: Day-to-day operations runbook for a multi-vendor telecom infrastructure, written as docs-as-code.
+
+image::fastdelivery-ducks.jpg[FastDelivery,240,role=right]
+
+This is the operations runbook of the FastDelivery platform: the procedures a network and systems operations team used every day on a multi-vendor telecom infrastructure, from firewall changes and certificate renewals to patching, monitoring and the final decommissioning.
+
+It is written in AsciiDoc and kept in Git. The same source builds this site with Antora and a PDF with Asciidoctor PDF, both in GitHub Actions on every change.
+
+* *Download the PDF:* {pdf-url}[fastdelivery-runbook.pdf]
+* *Source and build pipeline:* {repo-url}[github.com/gsaronni/docs-as-code-showcase]
+
+[NOTE]
+====
+The platform has been decommissioned, and every identifier has been fictionalised: organisations, people, domains, hostnames and addresses borrow from the _Alien_ universe (Seegson is the operator, Weyland-Yutani runs operations). Vendors and products are real.
+====
+
+== Chapters
+
+[cols="1,3"]
+|===
+|Network
+|xref:device-table.adoc[Device table], xref:asa-firewall.adoc[ASA Firepower], xref:asr-9001.adoc[ASR 9001], xref:ise.adoc[ISE], xref:nexus-5000.adoc[Nexus 5000], xref:f5-big-ip.adoc[F5 BIG-IP]
+
+|Platform services
+|xref:dns-bind9.adoc[DNS], xref:mta-sendmail.adoc[Mail transfer], xref:squid-proxy.adoc[Squid proxy], xref:certificates.adoc[Certificates], xref:vmware.adoc[VMware], xref:zabbix.adoc[Zabbix]
+
+|System administration
+|xref:commands.adoc[Commands], xref:remote-shell-login.adoc[Remote shell], xref:rdp-login.adoc[RDP], xref:user-management.adoc[User management], xref:disk-space.adoc[Disk space], xref:database.adoc[Database]
+
+|Applications
+|xref:icmf-restart.adoc[ICMF restart], xref:dwh.adoc[DWH], xref:iuam-users.adoc[IUAM users], xref:periodic-restart.adoc[Periodic restart], xref:nostromo.adoc[Nostromo], xref:airlock.adoc[Airlock]
+
+|Lifecycle
+|xref:decommissioning.adoc[Decommissioning], xref:procedure-examples.adoc[Procedure examples]
+|===
+
+== Revision history
+
+include::partial$revision-history.adoc[]

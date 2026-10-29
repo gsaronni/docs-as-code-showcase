@@ -1,0 +1,36 @@
+= VMWare
+
+.VMWare from EAG
+|===
+|Description |IP 
+
+|vRealize Log Insight |https://10.30.207.31/
+|Network Insight |https://10.30.207.55/
+|NSX vSphere |https://10.30.207.9/
+|===
+
+== Create the IPSET in vSPhere
+
+.Ip Sets work like the object-groups created in the ASA FW
+
+NOTE: This is configured for services that are available on the internet such as MINISITI - HYPERDYNE - AWS 
+
+* From the Menu `Network and Security` -> `Groups and tags` -> `IP Sets`
+* Create a new `IP Set`. Using the name given or previously chosen. Example: AWSHyperdyne
+* Add the IPs needed in the set and press `save`
+
+== Add the IPSET in the rules to have data flux
+
+* Go inside `Network and Security` -> `Firewall` -> Search the machine or Rule (in this case sev-x263)
+* If there is none under that name with the needed IPs then Create one in `Add Rule`
+* Be aware of creating the Rule in the corresponding Section
+* Give the new Rule a name
+* Select the `Object Type` -> in this case the `Virtual Machine` -> sev-x263 as source
+* Add the destination machine in this case AWSHyperdyne, after this specify the Service
+in case there is no Service set as the one you need -> add a new one, specifying:
+. Name (XXXX)
+. Layer (in this case Layer3)
+. Protocol (TCP or UDP)
+. Port number (443)
+
+* Press Publish

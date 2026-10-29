@@ -1,0 +1,29 @@
+= Allow a Device to be Reached by Remote Shell
+
+.Execute xref:rdp-login.adoc[RDP login]
+. Open Server Manager 
+. Go to `Tools`
+. `Computer Management`
+. Go to `Local Users and Groups` 
+. Search the user sys_kpi
+. Inside the `Properties` in members
+. `Add`
+. Select the location the server 
+. Add the Administrators group
+. Check inside `ProgramData` 
+
+NOTE: inside `C:` remember to flag show hidden folders
+
+[start=11]
+. Inside the ssh folder right click `administrators_authorized_keys` and select `Properties`
+. Choose `Security` tab 
+. `Advanced`
+. Click `Change option`
+. Select the machines as location
+. Add the group Administrators
+. Check the connection
+
+NOTE: If it doesn't work, check inside `Services`, if the ssh application is running you will have to request open the port
+
+// A video of it would be nice and more straighforward
+// What about CLI version of it?

@@ -1,0 +1,21 @@
+= Nostromo Activities and Updates
+
+.Mail Object: Seegson - NostromoCare - Request - Aggiornamento Report Nostromo
+
+```
+Request's description:
+
+Good morning,
+At the customer's request, to make a new report visible, we kindly ask you to perform the following update on the production database:
+
+use IM_1_HintIntranet
+update [RES-02L-] set rpt_profili= '111, 144, TLCC, 997, 172' where I_ID = 10000001
+
+Thank you.
+
+```
+* Log inside the required server or servers from EAG, usually indicated in the mail
+* Open Microsoft SQL Server Management Studio
+* You will be asked to log in as a user, in this case use 'sa' and insert the password
+* Open the Databases folder, and once inside do right click inside the `IM_1_HintIntranet` database, select new query
+* Once it opens the SQLQuery, paste the script given, select all, and press Execute.

@@ -1,0 +1,21 @@
+.Revision history
+[cols="10h,12h,10h,~"]
+|===
+|Version |Date |Authors |Description
+
+|1.8 |13/05/2024 |{author_2} |Merged Fastdelivery's wiki
+|1.8.1 |23/05/2024 |{author} |Restore All Services On Servers
+|1.8.1.1 |11/07/2024 |{author_2} |Added software versions
+|1.8.1.2 |12/12/2024 |{author_2} |Updated Disk Space table references
+.3+.^|1.8.2 .3+.^|16/12/2024 .3+.^|{author_2} d|Added Decommissioning steps d|Moved CM under ASA d|Updated Project Owners table
+|1.8.3 |27/01/2025 |{author_2} |Expanded decommission, added Assyst contact, refined sev-q282 cert
+|1.8.3.1 |30/01/2025 |{author_2} |Finally found how report.apolloreport works
+|1.8.3.2 |03/02/2025 |{author_2} |pfx extraction of pem and key file
+|1.8.4 |25/02/2025 |{author} |certificate error fix 
+|1.8.5 |25/02/2025 |{author} | DNS decommision on seegson.example
+|1.8.6 |19/03/2025 |{author_2} |SunOS commands reference
+|1.8.7 |26/06/2025 |{author_2} |Updated certificates link
+|1.9.0 |29/10/2026 |{author} |GitHub transplant: fictionalised public edition, built by CI
+|1.9.1 |29/10/2026 |{author} |Cover fix
+|1.10.0 |29/10/2026 |{author} |Split into chapters; Antora site
+|===

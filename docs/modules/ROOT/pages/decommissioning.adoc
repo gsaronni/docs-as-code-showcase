@@ -1,0 +1,53 @@
+= Decommissioning
+
+== Flag them as decommissioned on inventory
+
+. https://10.61.181.116/home.phpp[inventory]
+. click "Edit"
+. Top right at the window there's a pen and a recycle bin. Click the Pen
+. 2nd column, 6th option "Virtual Device Status", select Dismissed 
+. Bottom right of this small window press "Save"
+
+== Fetch the info
+. Identify project and devices from inventory
+. Log into F5 PRE/PRO into Local Traffic -> Network Map
+. Type the device names and fetch:
+* DNS namings
+* Virtual IP address
+* Virtual Servers names
+. Log into Firewall:
+* `change context DMZ`
+** `show nat | include <Virtual IP address>` 
+** Fetch the public IP and remove it
+** `show access-list | i <10.256.x.x>`
+** Identify and remove all of them
+** If they can't be removed check by ACL's line and get the object-group: `show access-list | i line <number>` (You can use the IP block section to remove a single IP from the object-group)
+* `change context FRONTEND` 
+** `show access-list | i <10.256.x.x>`
+** Identify and remove all of them
+** If they can't be removed check by ACL's line and get the object-group: `show access-list | i line <number>` (You can use the IP block section to remove a single IP from the object-group)
+* `change context BACKEND` 
+** `show access-list | i <10.256.x.x>`
+** Identify and remove all of them
+** If they can't be removed check by ACL's line and get the object-group: `show access-list | i line <number>` (You can use the IP block section to remove a single IP from the object-group)
+
+== Execute the changes
+. On BIG-IP F5: 
+* Set Virtual Server status as offline, black icon.
+* Set Nodes status as offline, black icon. 
+
+NOTE: Everything on the device must be black in order for Zabbix to stop monitoring it
+
+[start=2]
+. On excel: Striketrough the IPs and devices names in the https://seegson.sharepoint.example/sites/V-DNA/Documents/site-ip-inventory.xlsx[IP table]
+* Track the new freely available Public IPs, 203.0.113.x in the Tab and comment what they were used for, if there were any
+
+[start=3]
+. Log on vCenter MIL-ISE920 10.30.207.9, from chrome EAG
+. Find the devices and shut them down. Keep them offline one week and than delete them
+. Send an e-mail to change.manager@seegson.example, vendor.engineer@contractors.seegson.example, netsec.lead@seegson.example, ops.lead@seegson.example, with vendor.pm@contractors.seegson.example, service.manager@seegson.example and gabriele.saronni@seegson.example in Cc asking to remove them from backup and patching schedule
+. If we don't own the DNS, please point them to the https://seegson.sharepoint.example/sites/V-DNA[seegson.example DNS] team
+
+== Monitoring
+
+. send an e-mail to project.owner@seegson.example, dl-another-whynot@seegson.example  with vendor.pm@contractors.seegson.example, service.manager@seegson.example and gabriele.saronni@seegson.example in Cc asking to remove them from monitoring

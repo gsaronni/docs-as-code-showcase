@@ -1,0 +1,16 @@
+name: fastdelivery
+title: FastDelivery Runbook
+version: ~
+start_page: index.adoc
+nav:
+- modules/ROOT/nav.adoc
+asciidoc:
+  attributes:
+    author: Gabriele Saronni
+    author_2: Weyland-Yutani NOC
+    icons: font
+    page-pagination: ''
+    pdf-url: https://github.com/gsaronni/docs-as-code-showcase/releases/latest/download/fastdelivery-runbook.pdf
+    email: gabriele.saronni@weyland-yutani.example
+    email_2: noc@weyland-yutani.example
+    repo-url: https://github.com/gsaronni/docs-as-code-showcase

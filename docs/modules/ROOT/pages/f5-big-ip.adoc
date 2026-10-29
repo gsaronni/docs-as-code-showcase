@@ -1,0 +1,461 @@
+= F5 BIG-IP
+
+.BIG-IP Devices
+|===
+|DNS |IP |Description |Version
+
+|MIL-LB515 |10.30.126.176 https://10.30.126.176[GUI] |Production Active .5+.^|15.1.10.2 Build 0.44.2
+|MIL-LB514 |10.30.126.175 https://10.30.126.175[GUI] |Production Passive
+|MIL-LB513 |10.30.126.165 https://10.30.126.165[GUI] |PreProduction
+|mil-obm-lb1 |10.40.225.126 https://10.40.225.126[GUI] |Virtualized on https://10.40.59.19/[MIL-CFE01] F5 Pro active 
+|mil-obm-lb2 |10.40.225.123 https://10.40.225.123[GUI] |Virtualized on https://10.40.59.19/[MIL-CFE01] F5 Pro standby
+|===
+
+.Support
+* https://support.weyland-yutani.example/LTG/[Weyland-Yutani Support]
+* e-mail:
+
+== Nodes description
+
+image::nodeDescriptionF5.png[image,width=596,height=228]
+
+https://my.f5.com/manage/s/article/K12213214[source] +
+https://clouddocs.f5.com/training/community/f5cert/html/class1/modules/module3.html[source]
+
+TIP: To deepen the information about the F5 go https://support.F5.com/csp/home[here]
+
+== Remediation of the header using the iRule Pro
+
+.`iRule:/F5_FE-DMZ-ext/RemoveX-Header-Response_Irule`
+* With the IP search in the virtual server list from ALL contextes
+* Open the correspondent service
+* Go to resources from the needed context, otherwise it will be in Read Only
+* Pick the correct iRule then press finished
+
+.From CLI
+. `tmsh`
+. `cd /FE-`<needed context>
+. `list ltm virtual` if you need to find the name
+. `modify ltm virtual [virtual_server_name] rules RemoveX-Header-Response_Irule`
+
+.Some useful commands
+* If a replacement is needed you can: `modify ltm virtual my_vs rules { my_irule }`
+* If you need to find the iRule you can: `list ltm rule`
+
+== Find the devices in the F5 Production enviroment
+
+.GUI
+* Log into the GUI -> local traffic -> network map
+* Select the partition ALL -> introduce in filter the IP or VM
+
+.CLI
+* Log into the F5 CLI and run `tmsh` 
+* List items -> `cd / to root` -> `list /ltm node recursive <nodeName>`  
+* Or this can run from bash: `tmsh -c "cd /; list /ltm node recursive" | grep -b2 <nodeName>`  
+* To list all the nodes from all contextes run: `cd /`  
+** `list /ltm node recursive`
+* Once found the correct one run: `cd <context>`  
+** `list /ltm node <nodeName>`  
+
+TIP: From bash `tmsh -h` helps you with what to do, `tmsh --help` gives you detailed info
+  
+== Verifying the TSL
+
+.GUI
+* Log into needed F5 and look for the server:
+** Inside the server you should search for the advanced conf and see the available conf
+
+.CLI
+* Log into needed F5 and:
+** Type `openssl s_client -connect VIP:port number`
+** Example: `openssl s_client -connect 10.10.10.10:443 tslversion`  
+* This command will verify all the certificates configured in the f5:
+```
+show /ltm profile client-ssl | grep -E "TLS|Ltm::ClientSSL" | grep -v 1.2 | grep -v DTLS | grep -v ' 0'
+Output Example:
+Ltm::ClientSSL Profile: pre-discovery.seegson.example_cert
+TLSv1.3 0-RTT
+  TLS Protocol Version 1.0                                        1.6K
+  TLS Protocol Version 1.1                                          91
+  TLS Protocol Version 1.2                                       65.5K
+  TLS Protocol Version 1.3                                           0
+  DTLS Protocol Version 1                                            0
+  DTLS Tx Pushbacks                                                  0
+```
+== Patching Activity
+
+* This activity runs from MIL-LB515.int.seegson.example
+* A notification mail must be sent to monitoring group to signal the beginning
+* Turn off nodes as instructed from dedicated file depending on number: T71, T72 or T73
+** Log in MIL-LB515.int.seegson.example and run: `bash t7_all-main_v01.3.sh`
+* Contact the needed collegue and comunicate that nodes are offline and activity can begin 
+**
+
+NOTE: Do not contact him through: company mail. He does not read it
+
+* The application owner will contact you back to ask you to turn on the nodes
+* Once the nodes are back online notify Kelland to verify.
+** Kelland shift lead: +39 000 000 0001 
+** Kelland on-call engineer: +39 000 000 0002
+** They will verify once the shift starts according to CEST time zone
+* A notification mail must be sent to monitoring group to signal the end
+
+> Insert sample and link to patching procedure. Or include it here
+> The other T7 patching doc must be shipped together with this one or implemented here
+
+NOTE: If problems occurs you can find documentation in Weyland-Yutani OneDrive inside Cyclic Patching folder
+
+== Modify the banner in F5 CLI
+
+CAUTION: Do not take `vi` or `vim` https://vim.works/2019/03/03/emergency-vim-quickstart/[lightly]! Take sometime to read how to use it. https://www.adminschoice.com/vi-editor-quick-reference[Read me!]
+
+.From F5's CLI
+```
+vi /config/ssh/ssh_banner
+#Insert Banner 
+________________________________________
+             Seegson Italy
+
+      This network is protected by
+         a data security system
+
+          Unauthorized access
+          will be prosecuted.
+________________________________________
+
+Equipment: MIL-LB513
+
+Customer : Seegson
+
+Descr.   : F5 BIG-IP LTM-I4600
+________________________________________
+
+tmsh modify /sys sshd include "Banner /config/ssh/ssh_banner"
+
+tmsh save /sys config   #safe the config file
+```
+
+== Rule configuration on LTM to accept incoming requests from specific IP 
+
+.Example: 198.51.100.12 * CRM di lasalle.example to a specific URL (https://scoprioffer.seegson.example/api)
+* If the public IP of the service is not available, use `nslookup` or press http://www.kloth.net/services/nslookup.php[nslookup site]
+* Once the IP is obtained, find the corresponding private IP by querying the MIL-FW900 firewall (10.40.123.141):
+
+```Cisco
+- MIL-FW900-1 / DMZ / sec / act # show run nat
+object network obj-10.50.166.36
+ nat (LEGACY-DMZ, DSL_DATA) static 203.0.113.37 no-proxy-arp
+```
+
+=== From F5
+.GUI
+* Select "F5_FE_DMZ_ext" from the "Partion" drop-down menu
+* From Main -> Local Traffic -> Virtual Server
+* Put private IP 10.50.166.36, followed by wildcard `*`
+* Click on the entry of the server with Service Port 443 (HTTPS)
+* "Resources" from the horizontal menu above
+* Select the text contained in the "Name" field under "iRules" and copy (Ctrl + C or right mouse button)
+* Click on iRules from the menu on the left
+* Paste in the search field the text previously copied followed by wildcard `*`
+
+<<<
+
+* Insert the new instruction in the iRule code. Example: 
+
+```tcl
+when HTTP_REQUEST {
+  #CHG 10001
+  switch [HTTP :: host] {
+
+"discoveroffer.seegson.example" -
+"discoveroffer.seegson.example" {
+switch -glob [HTTP :: uri] {
+"/ api *" {
+if {([class match [IP :: client_addr] equals ministi02_Tool_https://eag.seegson.example/vpn/index.html[EAG]LE_Kelland_net]) or
+([class match [IP :: client_addr] equals ministi02_Tool_VDL_net]) or
+!!!!!!! new instruction inserted ---------> ([class match [IP :: client_addr] equals ministi02_CRM_Lasalle_net]) or <--------
+ ([class match [IP :: client_addr] equals ministi02_Hyperdyne_net]) or
+```
+
+* Click on Update to save the changes
+* Click on Pending Sync at the top left next to the F5 logo, to synchronize the changes made with the backup F5
+* Select the line corresponding to the device with "Sync Status" in yellow from the Device box and click on the "Sync" button
+
+== Update User List for alsmobile
+
+* Connect to the active F5 BIG-IP LTM https://10.30.126.176[GUI] `10.30.126.176` then import the file containing the user lists:
+
+IMPORTANT: It has to be done from `Common` Partition
+
+. Main -> System -> File Management -> Data Group File List 
+** [line-through]#Check latest "App-Android_msisdn_users_v2" number, as of 20230705 is 19#
+. Main -> System -> File Management -> Data Group File List -> Import (button on the right)
+. "Choose file" button
+. Pick "Overwrite existing"
+. In "Name" pick: "App-Android_msisdn_users_v2"
+. In "File Contents" select the "String" item
+. In "Data Group Name" enter the name of the group: "App-Android_msisdn_users_v2"
+. Import
+
+// What about having Data Group Name empty? It won't be referenced from iRule
+
+<<<
+
+[.lead]
+[.text-center]
+The following text is no longer necessary, but can be useful
+
+.`Update the reference to the Data Group File List in the iRule:`
+. Main -> Local Traffic -> iRules
+. Partition F5_FE-DMZ-Ext 
+. Select the first iRule `APP-android_v2-http_iRule` 
+
+CAUTION: Beware that there is another one is `s`, APP-android_v2-http**s**_iRule
+
+[start=4]
+. Modify line 6 `set static :: user_for_MSISDN "App-Android_msisdn_users_v19` with the updated value
+. Click bottom left on Update
+
+.`If F5 reports an error in compiling the file, proceed as follows:`
+. Copy only line 1 of the file and paste it in the F5 box
+. Click on Import
+. Go to the .txt file, select all the lines except line 1 already copied
+. Paste the selected lines in the F5 box
+. Import
+
+NOTE: It rarely happens but: If there is Pending Sync at the top left next to the F5 logo, click it to synchronize the changes made with the backup F5
+
+// How can I do it from CLI? How can I delete older ones owned by root?
+
+== Implement ACL in F5
+
+* Find out service name:
+. from `cmd` run: `nslookup <URL/FQDN> without https and without trailing /`
+. pick up the public IP and log into the firewall `10.40.123.142` `MIL-FW901`
+. from DMZ context look for the local IP: show nat | i `<publicIP>`
+* Look up the ACL group:
+. login into F5, PRE or PRO depending on the request
+. Click the Virtual Servers on the left menu
+. From top right select All[Read only] partition
+. Put the private IP in the search bar surrounded by wildcards `*`
+. From Resources Tab the iRules, always choose the `https` secure one
+. Look in each iRule the name, it's usually after "equal" inside the TCL script
+. From the left menu Local Traffic -> iRules -> Data Group List
+. Change partition to needed one
+. Put iRules name in the search bar surrounded by wildcards `*`
+. From the CMatrix get the IP and put it in Address
+. From the CM get the Note cell and put it in Value
+. Press Add and Update
+. Repeat the last steps until all the IPs are added
+* Answer the e-mail
+
+// A video procedure would be nicer
+
+== Create a Virtual Server (GUI)
+* Go to F5 GUI, inside Virtual Server -> Create. 
+* Follow the images below to continue the configuration
+
+image::virtualServer1.png[image,width=596,height=228]
+
+image::virtualServer2.png[image,width=596,height=228]
+
+image::virtualServer3.png[image,width=596,height=228]
+
+image::virtualServer4.png[[image,width=596,height=228]
+
+image::virtualServer5.png[image,width=596,height=228]
+
+.Pool Creation 
+image::virtualServer6.png[[image,width=596,height=228]
+
+.If it is a new Pool
+image::virtualServer8.png[image,width=596,height=228]
+
+.If are available, please check from Node List
+image::virtualServer9.png[image,width=596,height=228]
+
+.Then, associate Pool and Default Persistence profile to Virtual Server
+image::virtualServerA.png[image,width=596,height=228]
+
+.Health Monitor Check
+image::virtualServerB.png[image,width=596,height=228]
+
+.New Client SSL profile creation
+image::virtualServerC.png[image,width=596,height=228]
+
+image::virtualServerD.png[image,width=596,height=228]
+
+// A video would be nicer
+
+== Update or Upgrade BIG-IP 
+
+* For more information go to the F5 https://my.f5.com/manage/s/article/K84205182[guide] or follow the https://www.f5.com/pdf/deployment-guides/bigip-update-upgrade-guide.pdf[manual]
+* A case to https://support.weyland-yutani.example/LTG/[Weyland-Yutani] must be opened in order to retrieve the updates. 
+
+* If it's an HA (High Availability) Active Stand-by configuration:
+** Start from Standby device 
+** In case of configuration changes: `cpcfg --source=<volumeA> <volumeB>`
+** Disable automatic Sync in order to prevent sync errors from the different installed versions
+*** Check actual status: `tmsh list /cm device-group` or `tmsh list /cm device-group Device-group-1`
+*** Disable auto-sync: `tmsh modify /cm device-group Device-group-1 auto-sync disabled` and save `tmsh save /sys config`
+
+CAUTION: Once Automatic Sync is disabled, the configuration changes must be manually synchronized. 
+
+.Update Steps CLI
+* Push the needed isos to the path `/shared/images`
+* Go as root to the path `/shared/images`
+* Check volume software: `tmsh show sys software` to view software informations or list the images: `tmsh list sys software image`
+* Create the new volume for the new iso: `tmsh install sys software image <BIG-IP image ISO name> volume <volume_name> create-volume`
+** If you need to install an Hotfix: : `tmsh install sys software hotfix <BIG-IP hotfix-name.hotfix> volume <volume_name> create-volume` 
+
+TIP: If you get space error you have to remove an old volume: `tmsh delete sys software volume <volume_name>`
+
+* Check install status: `tmsh show sys software status` or `watch -n 30 "tmsh show sys software status"`
+* Reboot into the new volume: `tmsh reboot volume <volume_name>`
+
+WARNING: After you enter this command, the system immediately begins restarting. The system drops all existing connections and does not pass traffic until the restart completes and the BIG-IP configuration loads.
+
+.In case of configuration changes in the volume
+* Use the following syntax to copy the configuration from the current active configuration to the new boot location, prior to restarting and booting into the new volume: `cpcfg --source=<volumeA> <volumeB>`
+
+== F5 Failover
+
+To initiate a Manual Failover from the currently Active HA Peer BIG-IP in the Traffic Group, the following steps can be performed:
+
+.GUI Failover:
+. Log in to the active BIG-IP as the administrator
+. Click the Active link in the upper left hand corner next to the F5 Ball and Online. This is a shortcut link that takes you directly to Device Management > Traffic Group and into the Traffic Group for which the BIG-IP is currently the Active HA Peer BIG-IP.  
+. Near the bottom of the Traffic Group's config page, click the Force to Standby button to initiate the Manual Failover. And watch the HA Role of that BIG-IP move into the Standby HA Role in the upper left hand corner next to the F5 Ball and Online.
+
+.Reach the active `MIL-LB515.int.seegson.example` as shown below:
+image::failoverF5.png[image,width=596,height=228]
+
+.Inside Devices -> Change the Description and Press force `Stand by`
+image::failoverF5n2.png[image,width=596,height=228]
+
+.CLI Failover:
+. Log in to the active BIG-IP CLI as the administrator.
+. Navigate to the LTM module by typing `tmsh`.
+. Check the current state of the devices by running the command `show sys failover`.
+. Trigger the failover with `run sys failover standby`.
+
+<<<
+  
+== About Data-Group
+
+=== Search data-group in F5 CLI
+* Go to the needed enviroment PRE or PROD
+* From `tmsh` run :`cd /`
+* To search the context where the data-group is stored type `list ltm data-group recursive | grep data-groupName`
+** Example: `list ltm data-group recursive | grep NostromoCare-PRE_net`
+* Then to get the info needed from the data-group `list ltm data-group internal data-groupName`
+** Example: `list ltm data-group internal NostromoCare-PRE_net`
+
+=== Add IPs to a data-group in F5 from GUI
+Inside the excel take the URL do `nslookup xyz.seegson.example`
+
+.Example:
+```powershell
+  PS C:\> nslookup backoffice.seegson.example
+Server:  ns-office-it2.seegson.example
+Address:  10.74.100.239 --> Priv IP
+
+Name:    backoffice.seegson.example
+Address:  203.0.113.172
+Aliases:  backoffice.seegson.example
+```
+
+NOTE: With the Public IP go to the DMZ context in ASA, and run a `sh nat | i <publicIP>`. DMZ context is used because ther is NAT  
+
+.Example:
+```Cisco
+MIL-FW900-1/DMZ/pri/act#  sh nat | i 203.0.113.172
+36 (LEGACY-DMZ) to (DSL_DATA) source static obj-10.50.166.149 203.0.113.172  no-proxy-arp
+```
+
+* With the IP given from the ASA go to F5 Network map with partition: All. Be aware of the port you need, 80 or 443
+* Take the Virtual Server name
+* Search in the VS List the name you got from the prior step -> Resources -> click on the iRule, it leads you to the Properties of the iRule, read what it says and select the Datagroup
+* Then go inside iRules -> Datagroup List -> Paste the datagroup.  
+** Example: `Backoffice_BE190_net`
+* Go inside the datagroup and Add the needed IPs
+* Remember: to comment the added IPs using the Value option
+* Press Add and Update to save the changes
+
+IMPORTANT: In some cases you wil have more `data-groups` inside the `iRule`, verify the name from the CM, in some cases the IP has to be add into a `object-group`, in others a new `data-group` must be created
+
+=== Add/Remove IPs to a data-group in F5 from CLI
+
+.To add
+
+* A single entry
+** `tmsh create /ltm data-group internal <datagroup_name> records add { <entry_value> }`
+* Multiple entries at once
+** `tmsh create /ltm data-group internal <datagroup_name> records add { <entry1_value> <entry2_value> ... }`
+
+.To remove
+
+* A single entry
+** `tmsh delete /ltm data-group internal <datagroup_name> records delete { <entry_value> }`
+* Multiple entries at once
+** `tmsh delete /ltm data-group internal <datagroup_name> records delete { <entry1_value> <entry2_value> ... }`
+
+* Example:
+
+```
+[zzyourUser@MIL-LB515:Active:In Sync] ~ # tmsh
+cdzzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/Common)(tmos)# cd /
+zzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/)(tmos)# cd F5_FE-DMZ/
+zzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/F5_FE-DMZ)(tmos)# modify /ltm data-group internal NostromoCare-pro_net records 
+Options:
+  add                delete             modify             none               replace-all-with
+zzyourUser@(MIL-LB515)(cfg-sync In Sync)(Active)(/F5_FE-DMZ)(tmos)# modify /ltm data-group internal NostromoCare-pro_net records add/delete {n.n.n.n}
+```
+
+=== Add a new data-group to the F5 
+
+.Example: CM 8.18
+```powershell
+PS C:\Windows\system32> nslookup scopriofferta.seegson.example
+DNS request timed out.
+    timeout was 2 seconds.
+Server:  UnKnown
+Address:  10.74.100.239
+
+Name:    scopriofferta.seegson.example
+Address:  203.0.113.37
+Aliases:  scopriofferta.seegson.example
+
+Private IP
+10.50.166.36
+
+VS name
+minisiti02pro-discovery_HTTPS_vs
+
+iRule
+/F5_FE-DMZ-ext/minisiti02pro-discovery_HTTPS_iRule
+```
+
+In this case once we get to the iRule we noticed there is no datagroup that corresponds to the service needed in the Cm so we proceed to create it
+
+* Log in the F5 GUI -> go to iRules -> select Data-group -> create the name -> select a type in this case was `address` -> add the IP address needed and the value, a comment -> press Update
+
+=== Add the datagroup inside the needed iRules:
+. Data-group name = `minisiti02_CRM_Smart_Contact_net`
+. IP address = `198.51.100.13`
+. Line added to the iRule referring to the datagroup = `([class match [IP::client_addr] equals minisiti02_CRM_Smart_Contact_net]) or`
+
+== Removing a host from node/pool list 
+
+NOTE: To do this task you must have the node and pool name, to fetch those go to the Network Map 
+
+* Go inside the pool list, search the needed pool and direct to the right context finally remove the node from the pool
+* After that direct to the node list, search the node and delete it
+
+== Check if nodes has traffic 
+
+* Inside the F5 GUI, go to statistics -> Module Statistics from there search the needed pool and go to local traffic. As shown in the below example: 
+
+image::trafficInNodes.png[image,width=596,height=228]
+
+NOTE: Remember to be in All contexts 

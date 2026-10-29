@@ -1,0 +1,369 @@
+= Certificates Renewal
+
+IMPORTANT: Please notice this important step before asking to renew a certificate
+
+* The FQDN should be resolved from a DNS, public and/or private. You can use this public tool to verify if the service is resolved in Public DNS: https://www.infobyip.com/ipbulklookup.php[Domain and IP bulk lookup tool]
+* You can use “nslookup” from Seegson internal network to verify if it is resolved in Internal DNS.
+* The certificate can be renewed if the service is resolved at least in one of the 2 DNS (public or internal).
+* Check inventory if date is set to 01/01/1970 that means dismissed
+
+NOTE: In case it results dismissed please update the inventory.
+
+== Update notification mail of certificates about to expire (FastDelivery - Certificates - Expiring Date)
+
+* Log into mil-nms116, inventory's device as root
+* edit file `/home/oracle/scripts/certificates/check_certificate.sh` at line 63
+
+TIP: Any changes to be made to that mail can be done from that script
+
+== Folder on pans
+. Connecto to EAG
+. SSH to `10.40.59.24` `mil-ansible-01` with preferred application
+. Gain root privileges. (`su`)
+. `/home/ansysad/certsFD`
+. `ls -lrth`
+. The last file, right above the terminal is the needed certificate
+. `sudo cp <cert> /home/zzYOURUSER` or `sudo zip /home/zzYOURUSER/certs.zip *keyWord` make a zip with all the needed certificates
+. SFTP the cert out of the home directory in mil-ansible-01. I strongly suggest to use MobaXterm with the shared configuration
+
+// Anybody is free to make an easy fetch script
+
+== Extract pem and key from pfx
+
+* Get the pem file: `openssl pkcs12 -in hyperdyne_account_prod.pfx -out hyperdyne_account_prod.pem -nodes`
+* Extract the key: `openssl rsa -in hyperdyne_account_prod.pem -out hyperdyne_account_prod.key`
+
+== Create private key and CSR (common to all SHA2 type certificates)
+. Create CSR in PEM format and KEY.
+.. `cd` into configuration files' folder
+.. Edit `vi openssl-XXX.conf` depending on certificate type using CN or DSN if there's SAN.
+* `openssl-SHA2.conf`
+* `openssl-SHA2-SAN.conf`
+* `openssl-SHA1-PRV.conf`
+. SHA2 commands: `openssl req -new -newkey rsa:2048 -nodes -sha256 -out common_name.csr -keyout common_name.key -config <openssl-SHA2-??.conf>`
+. SHA1 commands: `openssl req -new -newkey rsa:2048 -nodes -sha1 -out abthq-pre.seegson.example.csr  -keyout common_name.key -config openssl-SHA1-PRV.conf`
+. Insert Common_Name when prompted, do not put password
+. Check if `.csr` and `.key` are inside the certificate's folder
+
+== Check CSR content
+. Run `sslshopper` or similar and check it with https://www.ssl247.it/support/tools/csr-decoder[decipher]
+. Copy file content `.csr` and check if the received fields are correct.
+. <<_ca_private_seegson_signature, CA Private Seegson Signature>>
+. <<_ca_private_fastdel_signature, CA Private FastDel Signature>>
+
+== Archiving
+. Inside FD's shared folder `\\mil-fs01\07-Sicurezza\RINNOVO CERTIFICATI\ARCHIVIO\` 
+. Create a new folder with the naming convention `<__num.ticket__>-<__common name__>` (eg `tdmauth.seegson.example`)
+. Put inside `.csr` e `.key` files
+. Delete what has been created locally at first step.
+
+== CA Public Seegson Signature
+. Reach https://seegson.sharepoint.example/sites/PKI/SitePages/Public%20Trust%20-%20Web%20Server.aspx[website]
+. Click on "standard SSL" if the certificate has one DNS only -> "Order now" 
+. Click on "Multi-domain SSL" if there are more than one DNS -> "Order now" 
+. Compile like below (Answers are inside "certificate request" ticket):
+
+image:cert/image1.png[image,width=752,height=470]
+
+image:cert/image2.png[image,width=752,height=984]
+
+image:cert/image3.png[image,width=752,height=984]
+
+image:cert/image4.png[image,width=752,height=984]
+
+=== Additional e-mails
+
+mailto:theBoss@seegson.example[theBoss@seegson.example]
+
+."Specify the environment". Specify Prod if the certificate is production, Pre-prod if it is PreProduction
+image:cert/image5.png[image,width=752,height=471]
+
+[start=5]
+. Click on submit and send email to mailto:theBoss@seegson.example[theBoss@seegson.example] asking for approval. +
+
+<<<
+
+== CA Private Seegson Signature
+
+.Connect with https://enrol.pki.seegson.example/aspx/certificate/CertificateIssuancePkcs10View.aspx[domain] user
+image:cert/image7.1.png[image,width=758,height=537]
+
+. If the device is PRO, leave "Web Server Certificate - Production" selected in the first field.
+. Copy what was created above into the second field.
+. In the SAN field specify DNS/SAN list.
+* If there is one CN only put it inside the field anyway.
+. In "Request/Service Description" specify a generic value: "web service"
+. Local Market/Country: "IT"
+. Operational/Delivery/Service Owner's and Business Owner's Email address specify: mailto:DL-certificates@internal.seegson.example[DL-certificates@internal.seegson.example]
+. Required Contacts: mailto:dl-another-whynot@seegson.example[dl-another-whynot@seegson.example]; mailto:theBoss@seegson.example[theBoss@seegson.example]; mailto:DL-theDL@seegson.example[DL-theDL@seegson.example]
+. Keep track of request's number putting it inside the previously created share 
+. You'll receive certificate by the e-mail.
+
+.As shown below:
+image:cert/image7.png[image,width=526,height=270]
+
+<<<
+
+== CA Private FastDel Signature
+Once generated the CSR, common procedure to all certificates, and checked the correctness, to sign the CSR on CA FastDel:
+
+IMPORTANT: root privileges needed.
+
+. `cd /app/causer`. 
+. Move `.key` e `.csr` into `/app/causer`: `cp *.csr *.key /app/causer/`
+. The command depends on the certificate:
+* Server type:
+** SERVER SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions server_cert`
+** SERVER SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions server_cert`
+* Client type:
+** CLIENT SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions usr_cert`
+** CLIENT SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose -extensions usr_cert`
+* LDAP type:
+** LDAP SERVER SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions server_cert`
+** LDAP SERVER SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions server_cert`
+** LDAP CLIENT SHA2: `openssl ca -config openssl-FD.conf -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions usr_cert`
+** LDAP CLIENT SHA1: `openssl ca -config openssl-FD.conf -md sha1 -in <file_richiesta.csr> -out certs/<cn_specified_in_the_request>.crt -policy policy_loose_LDAP -extensions usr_cert`
+. Once executed CA Fast-Del's passphrase is prompted, after that answer `Y` to the following requests.
+.. The certificate will be archived into `/app/causer/certs`
+.. Copy it inside the path where we created `.key` and `.csr`
+.. Create `.pfx`
+.. Archive everything in the share.
+
+NOTE: If there are problems with the certificate signature (crt) it's necessary to revoke the certificate before to try again:
+`cd /app/causer/ \ openssl ca -revoke <certificate_name>.crt -config openssl-FD.conf`
+
+== Signed certificate reception, comunication and archiving
+The certificate has to be checked and has to be aligned with the request. If it isn't it has to be requested or signaled via e-mail
+
+. Create file `.pfx` (PKCS12): `openssl pkcs12 -export -in common_name.crt -inkey common_name.key -out common_name.pfx`
+
+CAUTION: Sometimes the certificate has dots "." replaced by underscore "_". + Leave password field empty
+
+=== In case the file PFX creation fails
+. Create a `.PEM` file in order to create the `.PFX`
+. It happens often that CA Private Seegson sends a new signed certificate in binary format (DER) instead of PEM.
+. To check if it's in binary look at the file with `less`
+
+.It it's shown in this way it has to be converted in PEM format
+image:cert/image8.png[image,width=526,height=270]
+
+<<<
+
+If there isn't any DER it will be:
+```
+-----BEGIN CERTIFICATE-----
+MIIGUjCCBTqgAwIBwoTxI0xurZiqhkiG9w0BAQsFADBN
+MQswCQYDVQMBGlnaUNlcnQgSW5jMQYDVQQDEx5E
+aWdpQ2VydCBTSEEyIFwHsAxMjE1MDAwMDAwWhcN
+MwCQYDVQQGEwJHQjEQMA4dsBxMHTmV3YnVyeTEo
+-----END CERTIFICATE-----
+```
+
+[start=4]
+. Convert the file to binary: `openssl x509 -inform der -in <certificate-name-DER> -out common_name.pem`
+. Generate pfx file with `.PEM` file: `openssl pkcs12 -export -in <common_name.pem> -inkey common_name.key -out common_name.pfx`
+. Open SFTP client in order to upload the valid certificate and the `.pfx` inside FastDelivery share
+. Compress the following files with pass password (`.7z` or `.zip`): 
+* Key
+* CSR
+* CRT (certificate)
+* CA certificate (If it's DigiCert0 two are needed, root and middle)
+* PFX
+* Eventual PEM
+. zip: `zip -P <password> <my_file>.zip <whatIwanToZip>`
+. 7z: `7z a -r <my_file>.7z <whatIwanTo7zip> -p<"password">`
+
+.Example:
+image:cert/image9.png[image,width=459,height=242]
+
+.Attach the 3 CA based on which CA they come from:
+
+|===
+|Public CA Seegson - DigiCert |Private CA Seegson |CA FastDel
+
+a|
+.DigiCertCA.crt
+image:cert/cert.png[image,width=159,height=42] 
+a|
+.Seegson_Internal_Root_CA.crt
+image:cert/cert.png[image,width=159,height=42] 
+
+.Seegson_Internal_CA.crt
+image:cert/cert.png[image,width=159,height=42]
+
+a| 
+.CA-FastDel.crt
+image:cert/cert.png[image,width=159,height=42]
+
+|===
+
+[start=9]
+. Send an e-mail to whom requested the certificate to inform it's ready. Specify expire date and wait installation instructions.
+
+IMPORTANT: Do not send PRO's certificates unless directly expressed by the Project Manager 
+
+[start=10]
+. Update expiring dates on the 2 excel files
+
+== Certificate install on systems
+
+[.lead]
+After receiving confirm to install the certificates on the systems, we can have three different installation typologies
+
+<<<
+
+=== In case CRT file is not working on NGINX (HYPERDYNE) 
+
+. When the error after the `systemctl restart nginx` shows this:
+
+image:nginxERROR.png[image,width=459,height=242]
+
+[start=2]
+
+. You need to autogenerate a new crt file `openssl x509 -inform DER -in certificate.crt -text -noout`
+
+. To check the file use the following command `openssl x509 -in certificate.crt -text -noout`
+
+. Change the name of the crt file using `mv certificate.crt so-ws-internal.seegson.example.crt` and then restart the service `systemctl restart nginx`
+
+. Chech the application using this https://scopriofferta.seegson.example/login[URL]
+
+NOTE: To check the status using `systemctl status nginx`. Remember to inform the client
+
+=== F5 BIG-IP
+. Connecto to F5 with `Common` partition
+. Reach "System -> File Management -> SSL Certificate List" path +
+image:cert/image14.png[image,width=701,height=314]
+. Look for expiring certificate like in the screenshot below (*certificate_name*) check if it's actually close to the expiring date, than Click on import +
+image:cert/image15.png[image,width=759,height=170]
+. Put the key and an id name for the new certificate (ex: vastv.cc.seegson.example_03_12_20) +
+image:cert/image16.png[image,width=705,height=389]
+. At the end click Import:
+. Click again on the newly created certificate 
+. Upload `.crt` file, the new expire date should be shown
+. Click "Local Traffic -> Profiles -> SSL Client"
+. Look for the certificate that needs update 
+
+WARNING: Watch out for the partition, it's different for every certificate
+
+image:cert/image17.png[image,width=711,height=308]
+
+[start=9]
+. Change the highlighted fields in the screenshot with the new certificate. Delete the old one. Click on Update lower left:
+image:cert/image18.png[image,width=710,height=350]
+. Once finished, remember to sync the F5 +
+image:cert/image19.png[image,width=710,height=306]
+
+IMPORTANT: Certification update (private key+certificate+chain) has to be done simultaneously on F5 and Imperva, when the certificate is Public CA.
+
+?? For some certificates we will need to add a double bundle in f5, the procedure is below
+
+<<<
+
+=== Linux Server
+
+. Load the certificate on the server. 
+. Find previous certificates path `find / -name <certName>*` or `find / -name *.crt*`
+. Make `<today_date>_rch` folder and put the old certificates
+. Move the new certificates
+. If it's docker
+  * The file owner must be `jsyssrv` run: `chown jsyssrv:jsyssrv fdcgw.seegson.example.key`
+  * Restart the container `[jsyssrv@mil-srv-x006 ~]$ docker service update --force fdcgw_kong`
+  * The command *must* be launched on one machine only, docker will restart the other one. 
+  ** > 20230518 I don't know which one. I tested it today from 6 and 4 and they restarted itself only
+. Otherwise
+  * owners must be `root:root` run: `chown root:root <filename>`
+  * Restart `nginx` service with: `/etc/init.d/nginx restart` or look in history for the right command: `grep restart ~/.bash_history`
+
+// We can script this!
+
+<<<
+
+=== Windows Server
+
+. Connect to the host, or the bridge machine to connect to the host, through Remote Desktop Connection from EAG. 
+. Right click the IP left column
+. Select "Properties" -> "Local Resources" -> "Redirect options" 
+. Flag "Drives" 
+. Click OK
+. Connect to the host, Right click the IP from the left column
+. Click on "Reconnect server"
+. Load the certificate on the server
+. Run IIS "Internet Information Service" 
+. Select hostname from left window "Server Certificates"
+. Import `.pfx` certificate
+. Locally save with "Export" button
+. Move the old certificate into the folder `C:\Certificati\certificate_old`
+. Click on "Sites" from the left list
+. Select the site correspoding to the certificate
+. Inside actions, on the right click "Edit Site" -> "Binding" -> "Edit" 
+. Inside "SSL Certificate" click the new certificate
+. Click OK
+. Click top left "Host" 
+. Click top right "Manager Server" 
+. Click "restart".
+
+> for the new machines CA root and Intermediate CA may be needed
+
+// A script would be better
+
+=== MMC install 
+
+. Open console 
+. From windows serach
+. "mmc" +
+. image:cert/image20.png[image,width=558,height=460]
+. image:cert/image21.png[image,width=558,height=460]
+. image:cert/image22.png[image,width=558,height=460]
+. Import certificates +
+image:cert/image23.png[image,width=558,height=456]
+. Restart IIS +
+image:cert/image24.png[image,width=558,height=460]
+
+=== Custom step for report.apollo.seegson.example certificate on sev-q282
+
+.This procedure is needed only in sev-q282 yearly certificate renewal process.
+. Install the new certificate on BIG-IP and WAF
+. Connect to `sev-q282` through Remote Desktop Connection from EAG. 
+. Click the `.pfx` file, select "Local Machine", next a few times
+. Select "Automatically select the certificate store based on the type of certificate
+
+NOTE: Certificate is located in Certificates (Local Computer) Personal > Certificates
+
+[start=5]
+. Open the Report Server Configuration Manager
+. Choose "Microsoft Report BI Report Server"
+. Click connect
+. Click "Web Service URL" from left menu
+. Select the dropdown menu "HTTPS Certificate" than select the report.apollo.seegson.example
+. Now Apply is clicable. Click Apply
+
+.Sample result
+image:cert/image26.png[image,width=279,height=230]
+
+Verify at https://report.apollo.seegson.example/ReportServer[URL]
+
+.Expected output
+image:cert/image27.png[image,width=279,height=230]
+
+<<<
+
+== Service Request with WAF Team
+
+IMPORTANT: This procedure is necessary when updating a certificate together with the WAF team
+
+ > To check whether the service comes under Bridge or TRP Mode
+
+* Click on the https://seegson-dwp.onbmc.example/[link] and it will autologin using Seegson credentials
+
+* From the Menu `Browse Categories` -> `Technology_Seegson` -> `Cyber Security` and follow the steps as per screenshots:
+
+image:serviceWAF1.png[image,width=558,height=460]
+
+image:serviceWAF2.png[image,width=558,height=460]
+
+ > To update the certificate in WAF
+
+* Follow the same procedure as mentioned above screenshot but change the description in tab
+
+image:serviceWAF3.png[image,width=558,height=460]

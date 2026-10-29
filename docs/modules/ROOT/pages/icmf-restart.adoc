@@ -1,0 +1,352 @@
+= ICMF Application Restart
+
+In increasing order the used servers are sev-x356, 57v, 58v, 59v, 60v, and 61v, will be restarted.
+
+TIP: In case the process refuses to stop you can `ps aux | grep <name>` and `kill -9`
+
+== sev-x356
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,30%,20%"]
+|===
+|Process |Path |Command
+
+|Registry 
+.2+.^|`/app/icmf/icmf_common/bin-local` 
+|`./registry.sh status`
+
+|ICMFRR
+
+|`./component.sh ICMFRR status`
+
+|NPSMB01 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMb01 status`
+|Mb01 |`/app/icmf/icmf/bin-local/` |`./component.sh Mb01 status`
+
+|===
+
+TIP: The keyword "status" from the above table can be replaced with "stop" and "start"
+
+.Kill all snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./registry.sh stop
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb01 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb01 stop
+```
+
+TIP: Killing help `ps aux | grep -e "Mb01" -e "NPSMb01"`
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./registry.sh status
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb01 status
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb01 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./registry.sh start
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb01 start
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb01 start
+```
+
+== sev-x357
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+|NPSMb02 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMb02 status`
+|Mb02 |`/app/icmf/icmf/bin-local` |`./component.sh Mb02 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb02 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb02 stop
+```
+
+TIP: Killin help `ps aux | grep -e "Mb02" -e "NPSMb02"`
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb02 status
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb02 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMb02 start
+cd /app/icmf/icmf/bin-local/
+./component.sh Mb02 start
+```
+
+== sev-x358
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+|NPSCn01 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSCn01 status`
+|PullCn01 |`/app/icmf/icmf/bin-local` |`./component.sh PullCn01 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn01 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PullCn01 stop
+```
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn01 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PullCn01 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn01 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PullCn01 start
+```
+
+== sev-x359
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="10%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+|NPSCn02 |`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSCn02 status`
+|PushCn03 |`/app/icmf/icmf/bin-local` |`./component.sh PushCn03 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn02 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PushCn03 stop
+```
+
+.Status snippet
+```bash
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn02 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PushCn03 status
+```
+
+.Start snippet
+```bash
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSCn02 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PushCn03 start
+```
+
+== sev-x360
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="20%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+
+|NPSMemDB1a .2+.^|`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMemDB1a status`
+|NPSPr01 |`./component.sh NPSPr01 status`
+
+|PushMemDB1a .5+.^|`/app/icmf/icmf/bin-local` |`./component.sh PushMemDB1a status`
+|PushPr01 |`./component.sh PushPr01 status`
+|PushMemDB2b |`./component.sh PushMemDB2b status`
+|PullMemDB1a |`./component.sh PullMemDB1a status`
+|PullPr01 |`./component.sh PullPr01 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1a stop
+./component.sh NPSPr01 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1a stop
+./component.sh PushPr01 stop
+./component.sh PushMemDB2b stop
+./component.sh PullMemDB1a stop
+./component.sh PullPr01 stop
+```
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1a status
+./component.sh NPSPr01 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1a status
+./component.sh PushPr01 status
+./component.sh PushMemDB2b status
+./component.sh PullMemDB1a status
+./component.sh PullPr01 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1a start
+./component.sh NPSPr01 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1a start
+./component.sh PushPr01 start
+./component.sh PushMemDB2b start
+./component.sh PullMemDB1a start
+./component.sh PullPr01 start
+```
+
+== sev-x361
+
+IMPORTANT: Become icmf: `su icmf`
+
+.Processes
+[cols="20%,40%,40%"]
+|===
+|Process |Path |Command
+
+|ICMFRR |`/app/icmf/icmf_common/bin-local` |`./component.sh ICMFRR status`
+
+|NPSMemDB1b .2+.^|`/app/icmf/icmf_nps/bin-local` |`./component.sh NPSMemDB1b status`
+|NPSPr02 |`./component.sh NPSPr02 status`
+
+|PushMemDB1b .5+.^|`/app/icmf/icmf/bin-local` |`./component.sh PushMemDB1b status`
+|PullMemDB1b |`./component.sh PullMemDB1b status`
+|PushMemDB2a |`./component.sh PushMemDB2a status`
+|PushPr02 |`./component.sh PushPr02 status`
+|PullPr02 |`./component.sh PullPr02 status`
+|===
+
+.Stop snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR stop
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1b stop
+./component.sh NPSPr02 stop
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB1b stop
+./component.sh PullMemDB1b stop
+./component.sh PushMemDB2a stop
+./component.sh PushPr02 stop
+./component.sh PullPr02 stop
+```
+
+TIP: Killin help `ps aux | grep -e "Mb02" -e "NPSMb02"`
+
+.Status snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR status
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1b status
+./component.sh NPSPr02 status
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB2a status
+./component.sh PushMemDB1b status
+./component.sh PushPr02 status
+./component.sh PullMemDB1b status
+./component.sh PullPr02 status
+```
+
+.Start snippet
+```bash
+su icmf
+cd /app/icmf/icmf_common/bin-local/
+./component.sh ICMFRR start
+cd /app/icmf/icmf_nps/bin-local/
+./component.sh NPSMemDB1b start
+./component.sh NPSPr02 start
+cd /app/icmf/icmf/bin-local/
+./component.sh PushMemDB2a start
+./component.sh PushMemDB1b start
+./component.sh PushPr02 start
+./component.sh PullMemDB1b start
+./component.sh PullPr02 start
+```
+
+> 20230705 I can make custom macro for the checks
+
+// Script needed. Let's start from bash and move to ansible. 

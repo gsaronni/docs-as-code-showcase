@@ -1,0 +1,131 @@
+= Get_Users IUAM update monthly
+
+This activity involves mil-nms117 from `sys_kpi` user under the path `AccountReconciliation_GetUsers/AccountReconciliation`.  
+
+TIP: `cd Acc <Tab>`
+
+This script will log into all the devices that in inventory has "Ade" "Yes" flag and takes notes of the accounts inside. +
+With the no option that log stays local in the machine, with the flag yes it's converted into a csv and pushed into IUAM machine.
+
+It has to be done monthly by hand:
+
+* You **cannot** put it at crontab 
+* You **cannot** use `nohup` or `screen` or any hang option
+
+It must be run the first friday of the month in order to get the month change in the output.
+
+* If the first friday of the month is not the first day of the month
+
+IMPORTANT: The script must be executed manually and the session must be kept logged on. All commands start from the `/home/sys_kpi/AccountReconciliation_GetUsers/AccountReconciliation` because `./Get_Users` script location
+
+== Test weekly friday
+
+To test the situation use the following commands:
+
+.You can use history to get the command: `ctrl+R no` should return the command
+```bash
+./GetUsers.sh  "Fast Delivery" "ade" "cron" "query/cron.sql" "no"
+./GetUsers.sh  "SE SysAdmin" "ade" "cron" "query/cron.sql" "no"
+```
+
+NOTE: As 20230804 FastDelivery takes around 5m and SE SysAdmin takes 1h. + 
+As 20230825 FastDelivery takes around 5m and SE SysAdmin takes 1h40m
+
+Check the output:
+```bash
+ls -1 output/Fast_Delivery/cron/ade/yyyymmdd.HH/tmp
+ls -1 output/SE_SysAdmin/cron/ade/yyyymmdd.HH/tmp
+```
+
+Send an email to: manager2@contractors.seegson.example; colleague@weyland-yutani.example; colleague@seegson.example; vendor.engineer@contractors.seegson.example
+
+With Cc: boss@contractors.seegson.example; boss2@weyland-yutani.example; manager@weyland-yutani.example; gabriele.saronni@seegson.example; noc.engineer@seegson.example
+
+The mail subject will be: https://weeknumber.com/[weeknumber] - Get_Users - TEST - ADE 
+
+The mail body will be: +
+Here FastDelivery anomalies: +
+`ls -1 AccountReconciliation/output/Fast_Delivery/cron/ade/yyyymmdd.HH/tmp` +
+Here SESysAdmin anomalies: +
+`ls -1 AccountReconciliation/output/SE_SysAdmin/cron/ade/yyyymmdd.HH/tmp`
+
+Now fetch the attachments, they need to be renamed as `csv` and downloaded:
+
+.As sys_kpi from mil-nms117
+```bash
+cp AccountReconciliation_GetUsers/output/Fast_Delivery/cron/ade/yyyymmdd.HH/result/systems.accounts yyyymmdd_FD.csv
+cp AccountReconciliation_GetUsers/output/SE_SysAdmin/cron/ade/yyyymmdd.HH/result/systems.accounts yyyymmdd_SA.csv
+```
+
+> delete any `csv` leftover from previous runs
+
+== Production, every first friday of the month
+To execute it
+
+.You can use history to get the command: `ctrl+R yes` should return the command
+```bash
+./GetUsers.sh  "Fast Delivery" "ade" "cron" "query/cron.sql" "yes"
+./GetUsers.sh  "SE SysAdmin" "ade" "cron" "query/cron.sql" "yes"
+```
+
+.Check the output:
+```bash
+ls AccountReconciliation/output/Fast_Delivery/cron/ade/yyyymmdd.HH/tmp
+ls AccountReconciliation/output/SE_SysAdmin/cron/ade/yyyymmdd.HH/tmp
+```
+
+NOTE: As 20230804 FastDelivery keeps the same elapsed time while instead SysAdmin 40m
+
+> The last output line should be an scplike output confirming the file has been pushed successfully
+
+`Account-OS-SESysAdmin_ADE_yyyymm.csv                                                                                                                    100%  966KB 965.6KB/s   00:00`
+
+=== Extra trimming
+
+* FastDelivery: `sed -i '/connection/d' Account-OS-Fast_Delivery_ADE_202404.csv` (sed -i '/;connection/d' )
+* SeSysAdmin: 
+** `cd ~/AccountReconciliation_GetUsers/output/SE_SysAdmin/cron/ade/20240405.06/result`
+** `sed -i '/Comando\|completato\|con\|per\|utente/d' system.accounts`
+** `egrep -iwf ../../../../../../iuam_hosts.lst systems.accounts > Account-OS-SESysAdmin_ADE_202404.csv`
+** `awk -F';' '{print $1}' system.accounts | sort -u | wc -l`
+
+NOTE: As of 20240408 Fastdelivery has: 188 and SysAdmin 956 lines 
+
+=== In case of erros:
+
+* Destination folder: `ssh sysadmin_sftp@10.40.225.176 ls -l /ACFSdisk/iuam_ade`
+* expected output: `/ACFSdisk/iuam_ade`
+
+In case the file is not there: you need to upload them manually:
+
+* Account-OS-Fast_Delivery_ADE_yyyymm.csv
+* Account-OS-SESysAdmin_ADE_yyyymm.csv
+
+if csv not present:
+
+```bash
+cd /home/sys_kpi/AccountReconciliation_GetUsers/output/SE_SysAdmin/cron/ade/yyyymmdd.hh/result
+
+cp systems.accounts Account-OS-SESysAdmin_ADE_yyyymm.csv
+scp Account-OS-SESysAdmin_ADE_yyyymm.csv sysadmin_sftp@10.40.225.176:/ACFSdisk/iuam_ade
+
+cd /home/sys_kpi/AccountReconciliation_GetUsers/output/Fast_Delivery/cron/ade/yyyymmdd.hh/result
+
+cp systems.accounts Account-OS-Fast_Delivery_ADE_yyyymm.csv
+scp Account-OS-Fast_Delivery_ADE_yyyymm.csv sysadmin_sftp@10.40.225.176:/ACFSdisk/iuam_ade
+
+ssh sysadmin_sftp@10.40.225.176 ls -l /ACFSdisk/iuam_ade
+```
+
+.Warn the team to run again the process
+Send an e-mail to: DL-ServiceHelp@seegson.example;
+With Cc: boss2@weyland-yutani.example; manager@weyland-yutani.example
+
+```
+
+potete proseguire con la lavorazione:
+
+ssh sysadmin_sftp@10.40.225.176 ls -l /ACFSdisk/iuam_ade
+-rw-rw-rw- 1 sysadmin_sftp   sftp_ade        379669 Feb 23 17:59 Account-OS-Fast_Delivery_ADE_202402.csv
+-rw-rw-rw- 1 sysadmin_sftp   sftp_ade        930697 Feb 23 17:58 Account-OS-SESysAdmin_ADE_202402.csv
+```

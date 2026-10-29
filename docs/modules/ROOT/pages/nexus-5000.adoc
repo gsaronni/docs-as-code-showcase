@@ -1,0 +1,64 @@
+= Cisco Nexus 5000
+
+.Cisco Nexus 5612
+|===
+|DNS |IP |Device |BIOS |System
+
+|MIL-SW904 |10.40.123.139 .2+.^|Cisco Nexus 5612 .2+.^|3.7.0 .2+.^|7.3(3)N1(1)
+|MIL-SW905 |10.40.123.140 
+|===
+
+.Support
+https://mycase.cloudapps.cisco.com/case[Cisco Case]
+
+== Check the routing 
+
+* Log into the MIL-SW904 or MIL-SW905. Run `sh ip prefix-list ?` to show existing prefixs. Example:
+
+```Cisco
+MIL-SW904# sh ip prefix-list ?
+  <CR>
+  >                      Redirect it to a file
+  >>                     Redirect it to a file in append mode
+  WORD                   Name of prefix-list (Max Size 63)
+  static-DSL_DATA        Known prefix-list name
+  static-EITO_PROD       Known prefix-list name
+  static-ITDCC           Known prefix-list name
+  static-IT_CSP_TRANSIT  Known prefix-list name
+  static-MGMT            Known prefix-list name
+  static-SERVICE_CTP     Known prefix-list name
+  static-TRUSTED_S2S     Known prefix-list name
+  static-UNTRUSTED_U2S   Known prefix-list name
+  |                      Pipe command output to filter
+
+MIL-SW904#sh ip prefix-list static-IT_CSP_TRANSIT
+ip prefix-list static-IT_CSP_TRANSIT: 2 entries
+   seq 5 permit 10.50.160.0/20
+   seq 10 permit 10.30.173.0/22
+```
+* Has to be picked depending on the VRF
+* If the IP is already inside the prefix there's no need to configure the routing, add the ACL to each context 
+
+== Network insertion on prefix-list 
+
+* To insert a new IP in the prefix-list follow the steps below:
+* Go to `configure terminal`
+* Type the command `ip prefix-list _name_ description _string_` -> Optional: Adds an information string about the prefix list or `ip prefix-list _name_ [ seq number ] [{ permit | deny } prefix {[ eq prefix-length ] | [ ge prefix-length ] [ le prefix-length ]}]`
+
+.Example: 
+```
+ip prefix-list static-UNTRUSTED_U2S seq 45 permit 10.30.173.0 le 24
+show ip prefix-list _name_ -> to review the list
+copy running-config startup-config
+```
+== Configuring the Route in an existing Interface 
+
+* To configure a new route inside the interface follow the steps below:
+.Example: 
+```
+sh run vrf UNTRUSTED_U2S
+conf t
+vrf context UNTRUSTED_U2S
+ip route X.X.X.X/X Vlan<id> IP next-hop address in format i.i.i.i
+copy running-config startup-config
+```

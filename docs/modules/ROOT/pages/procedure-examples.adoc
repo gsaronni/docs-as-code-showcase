@@ -1,0 +1,81 @@
+= Procedure Examples
+
+== Procedure Examples
+
+=== CM for ACL 
+
+Mail in inbox: -> Re: 100104 Implementation of AWSLayer to IPLAN (Sevastopol)
+
+```
+Ciao,
+In allegato una communication matrix che mi hanno spedito per il Progetto Sevastopol da implementare su IT_CSP_TRANSIT (RT 10001:10002 both IM & EX),
+
+Ho aperto a IP Design il per il 100105 controllo del routing.
+Non necessita di NAT 
+```
+
+IMPORTANT: If NAT is needed go to the ASA section regarding the actions 
+
+
+.CM example
+image::exampleCM.png[image,width=596,height=228]
+
+.Once checked where the VRF arrives inside the Network Scheme, go to check the first routers `ASR 9K` and the `Nexus 5K`
+```Cisco
+RP/0/RSP0/CPU0:MIL-RT900#sh rpl prefix-set | i IT_CSP_TRANSIT
+Wed Oct  5 15:04:46.511 CEST
+prefix-set pfx_IT_CSP_TRANSIT_toPE
+prefix-set pfx_IT_CSP_TRANSIT_fromPE
+
+Cisco Nexus 5000 
+MIL-SW904# sh ip prefix-list ?
+  <CR>
+  >                      Redirect it to a file
+  >>                     Redirect it to a file in append mode
+  WORD                   Name of prefix-list (Max Size 63)
+  static-DSL_DATA        Known prefix-list name
+  static-EITO_PROD       Known prefix-list name
+  static-ITDCC           Known prefix-list name
+  static-IT_CSP_TRANSIT  Known prefix-list name
+  static-MGMT            Known prefix-list name
+  static-SERVICE_CTP     Known prefix-list name
+  static-TRUSTED_S2S     Known prefix-list name
+  static-UNTRUSTED_U2S   Known prefix-list name
+  |                      Pipe command output to filter
+
+MIL-SW904#sh ip prefix-list static-IT_CSP_TRANSIT
+ip prefix-list static-IT_CSP_TRANSIT: 2 entries
+   seq 5 permit 10.50.160.0/20
+   seq 10 permit 10.30.173.0/22
+```
+* As seen before, the prefix are configured. Follow the procedure for each of them in the corresponding section in the ASR 9000 and Nexus 5000
+* Go to the `MIL-FW900-1` (firewall) and add in each context the new route -> this might depend on the route you are pointing. This hop goes from IT_CSP_TRANSIT up to DMZ
+
+.In case you need to add routes inside ASA contexts
+```Cisco
+MIL-FW900-1/MGMT/pri/act# ch co B
+MIL-FW900-1/BACKEND/pri/act# sh route | i 100.66.182.173
+S        100.66.182.173 255.255.255.255 [1/0] via 192.168.28.1, IT_CSP_TRANSIT
+```
+
+.The service comes from 192.168.28.1 (IT_CSP_TRANSIT). That route is added to the context  
+```Cisco
+MIL-FW900-1/BACKEND/pri/act# conf t
+MIL-FW900-1/BACKEND/pri/act(config)# route IT_CSP_TRANSIT NEEDED IP + SUBNET MASK + ROUTE 
+MIL-FW900-1/BACKEND/pri/act(config)# wr
+```
+
+.The same procedure is added in each context, addig the corresponding route in the prior command
+```Cisco
+MIL-FW900-1/BACKEND/pri/act# sh route
+MIL-FW900-1/BACKEND/pri/act# sh route | i FRONT
+S-       0.0.0.0 0.0.0.0 [1/0] via 192.168.65.1, FRONT-BACK
+MIL-FW900-1/BACKEND/pri/act(config)# ch c F
+MIL-FW900-1/FRONTEND/pri/act(config)#
+MIL-FW900-1/FRONTEND/pri/act# sh run | i route
+route DMZ-FRONT 0.0.0.0 0.0.0.0 192.168.64.1 1
+route FRONT-BACK 10.0.0.0 255.0.0.0 192.168.65.3 1
+MIL-FW900-1/FRONTEND/pri/act# conf t
+MIL-FW900-1/FRONTEND/pri/act(config)# route FRONT-BACK 198.51.100.17 255.255.255.240 192.168.65.3
+MIL-FW900-1/DMZ/pri/act(config)# route DMZ-FRONT 198.51.100.17 255.255.255.240 192.168.64.
+```

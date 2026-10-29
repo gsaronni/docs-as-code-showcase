@@ -1,0 +1,70 @@
+= Squid Proxy
+
+.Proxy devices
+|===
+|DNS |IP |Role |Version
+
+|sev-x100 |10.50.166.100 |Proxy Active .3+.^|4.15
+|sev-x222 |10.50.166.102 |Proxy Standby
+|Proxy VIP |10.50.166.101:8080 | Balanced on F5
+|===
+
+== Proxy Squid Configuration
+* Connect to Ansible through https://eag.seegson.example/vpn/index.html[EAG]
+* Check on ASA Firewall inside DMZ context
+* If there are ACLs towards the service port add: `access-list GLOBAL_ACL extended permit tcp host 10.50.166.102 any4 eq 8226`
+* From mil-ansible-01 log into 10.50.166.100 aka sev-x100
+* With root access create file in `/etc/squid/`
+* Insert domains in the file: `allowed-ACL_NAME.squid`
+* Edit the file:
+
+CAUTION: Do not take `vi` or `vim` https://vim.works/2019/03/03/emergency-vim-quickstart/[lightly]! Take sometime to read how to use it. https://www.adminschoice.com/vi-editor-quick-reference[Read me!] 
+
+```bash
+[root@sev-x100 squid]# vi allowed-win_act.squid
+# YYYYMMDD 
+# If edited after creation keep track of it with: YYYYMMDD_v0.1
+.microsoft.com  
+.windowsupdate.com
+.windows.com
+```
+
+* Edit `/etc/squid/squid.conf` file and add the following:
+** For one or more IPs search the needed rule and add it `x.x.x.x/32` 
+** In the case of adding a rule follow the example below to configure it
+
+```bash
+#########################################################
+# Win Activation YYYYMMDD
+acl Win_Act src 10.30.124.15/32 10.30.124.16/32 
+acl Win_Sites dstdomain "/etc/squid/allowed-win_act.squid"
+http_access allow Win_Act Win_Sites
+######################################################### 
+```
+
+* Check at the beginning of the file if the destination port it's inside the ACL
+** Example: acl SSL_ports port 8226
+** You can find the line with: `grep <portNumber> <fileName>`
+* Restart the service: `service squid restart`
+
+IMPORTANT: Mirror the configurations on `sev-x222 10.50.166.102`
+
+.Test it
+```bash
+[root@sev-x222 squid]# tail -fn 100 /var/log/squid/access.log | grep api.partner-saas.example
+07/Jun/2021:16:49:35 +0200     23 10.50.166.112 TCP_MISS/503 0 CONNECT api.partner-saas.example:8226 DIRECT/198.51.100.16
+07/Jun/2021:16:50:20 +0200      0 10.50.166.112 TCP_MISS/503 0 CONNECT api.partner-saas.example:8226 DIRECT/198.51.100.16
+
+[root@sev-x222 squid]# grep api.partner-saas.example /var/log/squid/access.log
+```
+NOTE: In case the implementation doesn't work check if the source IP's added to the proxy are configured inside ASA
+
+=== Useful Squid Commands 
+To restart and control the status of the proxy `systemctl restart squid && systemctl status squid`
+
+=== How to read needed files
+* Unzip all the folder: `unzip -d . squid_sev-x100_20221028.zip`
+* Open it: `less etc/squid/squid.conf`
+* Look at files inside zip: `unzip -l squid_sev-x100_20221028.zip`
+* Unzip only squid.conf: `unzip -j squid_sev-x100_20221028.zip etc/squid/squid.conf -d .`
+* Open it: `less etc/squid/squid.con`

@@ -1,0 +1,162 @@
+= Periodic Process Restart
+
+.Example request
+```
+Buongiorno,
+per forzare il ripristino della connessione verso la coda oracle, 
+si richiede di eseguire il restart con utenza "jsyssrv" del componente "logicmm" sui due nodi "sev-s245 e sev-s246".
+Grazie
+```
+
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* log as the requested user, "jsyssrv"
+* Run a `find / -name <indicated_service>*` to find service path. Usually something like `path_to_service/bin/`
+* Verify service status with one of the following `./service.sh check` or `./service.sh status` 
+** Check if the service has the following commands available; `./service.sh restart`, `./service.sh stop`, `./service.sh graceful-restart`
+** You can run `./service.sh` without commands in order to discover possibilities
+
+.If there's no stop command or it refuses to die
+* Determine the PID (Process ID) using `ps aux | serviceName`
+* Kill it: `kill -9 PID`
+* Restart service `./service.sh start`
+** Repeat the process in all the requested servers
+* Reply to the request
+
+<<<
+
+== Restore All Services On Servers
+.Example request
+```
+Good Morning,
+We have observed that since XXX yesterday ALL services on XXX servers have stopped working as if a kill of all processes was done.
+
+Could you please provide an audit and turn all services back on?
+Grazie
+```
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* Inside the path `/var/tmp/` check the owner of the script named `ossXXX_start_all.sh`
+* Log as the requested user and run the script named `ossXXX_start_all.sh` 
+
+== Transaction manager
+
+.Example request
+```
+Buongiorno,
+a seguito di questo allarme vi chiedo di provvedere a fare il restart del transactionmanager del nodo sev-s245
+Grazie
+```
+
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* The server is listed this time: sev-s245
+** Beware that this is twin with sev-s246
+* log as the requested user, in this case it's not told but it's `jsyssrv`
+* The steps are the following
+
+CAUTION: Log as `jsyssrv` from `ansysad` user. In case you log from moba sessions, type `exit` or ctrl+d to revert back to ansysad from root
+
+```
+sudo su - jsyssrv
+cd /app/jsyssrv/jboss-as-7.1.1.Final/bin/
+./transactionmanager.sh stop
+./transactionmanager.sh start
+```
+
+if you encounter the following:
+```
+jsyssrv@sev-s246:/app/jsyssrv/jboss-as-7.1.1.Final/bin# ./transactionmanager.sh start
+
+[INFO] - Checking transactionmanager status
+[INFO] - PID file trovato (6002) - Verifico se c'Ã¨ un processo di transactionmanager attivo
+[WARN] - Questa istanza di transactionmanager sembra essere ancora attiva
+[WARN] - Aspetta ancora qualche secondo prima di tentare un riavvio
+[ALERT] - Se invece sei proprio sicuro di cosa stai facendo, esegui: kill -9 6002 6045
+```
+
+Run the suggested command: `kill -9 6002 6045` which is different every time
+
+> It is most likely that after confirming the restart on sev-s245 another mail will follow asking for the same activity on sev-s246
+
+<<<
+
+== Comms Barring
+
+* Servers can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+** sev-s256
+** sev-s257
+** sev-s258
+* become `su - Comms Barring`
+* The path is: `/app/barringws/fsb/Comms Barring`
+* Run `./barringws stop`
+* Run `./barringws start`
+
+<<<
+
+== King Kong FDCGW
+
+.Example request
+```
+Ciao,
+
+dopo il patching di questa mattina  il processo Kong risulta spento.
+Potete forzare un update del servizio ?
+Collegarsi su un nodo di docker ( mil-srv-x006 o mil-srv-x007 ) con l’utenza jsyssrv e dare il comando
+docker service update fdcgw_kong
+Se non funziona provate a eseguire questa procedura:
+docker service scale fdcgw_kong=0
+docker service scale fdcgw_kong=1
+docker service scale fdcgw_kong=2
+
+Nota:
+Per verificare che sia tutto a posto  potete usare il comando: `docker service ls`
+
+Dovrebbe mostrare 2 istanze di fdcgw_kong attive
+```
+
+* The server can be accessed from mil-ansible-01, or using mobaXterm saved sessions
+* Log into either of the asked ones but don't do the activity on both
+* **Don't** use `docker service update fdcgw_kong`
+* Run the other commands direcly one after the other
+* Check with `docker service ls`
+
+<<<
+
+== Restart Agent inside ODI Devices
+
+.Example request
+```
+Ciao,
+Venerdì scorso non ci siamo accorti che con il ripristino della MIL-SRV-Q021 non si è provveduto a riattivare l’agente ODI oraclediagent1.
+Si chiede quindi di provvedere il prima possibile.
+```
+
+* Log inside the required server or servers from EAG 
+* From Command Prompt go inside this path `C:\Oracle\Middleware\Oracle_Home\user_projects\domains\base_domain\bin`
+* Run this command `startComponent.cmd OracleDIAgent1`
+* You will be asked to insert a password regading the Node Manager Oracle ODI MIL-SRV-ODI01 and MIL-SRV-ODI02, stored inside the inventory
+
+NOTE: Remember the agents are: OracleDIAgent1 - MIL-SRV-Q021 and OracleDIAgent2 - MIL-SRV-Q022
+
+<<<
+
+== Restart ERIF LEGACY
+
+.If you are not already, log in with the erif utility
+
+* Enter inside the "ER_IF" directory: `cd /app/erif/ER_IF`
+** Stop ERIF Legacy: `./jbctl -c stop -e it -s settings_solaris.sh` 
+** Start ERIF Legacy: `./jbctl -c start -e it -s settings_solaris.sh`
+
+NOTE: Nodes are sev-s250-sev-s251-sev-s252-sev-s253-sev-s254-sev-s255
+
+== Restart kplexgw 
+
+.If you are not already, log in with the jboss utility
+
+* Enter inside the "kplexgw" directory: `cd /app/jboss/wildfly-18.0.1.Final_Kplex/bin`
+** Stop kplexgw: `./kplexgw.sh stop`
+
+IMPORTANT: The stopping process typically lasts between 5 to 15 minutes. To ensure it has stopped, simply rerun the previous command. 
+
+** Start kplexgw: `./kplexgw.sh start` 
+
+NOTE: Nodes are sev-s259-sev-s260. Restart one at a time 
