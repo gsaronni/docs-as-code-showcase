@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'supplemental-ui/**'
       - 'antora-playbook.yml'
       - '.github/workflows/publish-site.yml'
   workflow_dispatch:

@@ -8,9 +8,12 @@ content:
   - url: .
     branches: HEAD
     start_path: docs
+    edit_url: 'https://github.com/gsaronni/docs-as-code-showcase/edit/main/{path}'
 ui:
   bundle:
     url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
     snapshot: true
+  # Replaces the default UI's placeholder navbar and footer
+  supplemental_files: ./supplemental-ui
 output:
   dir: build/site
