@@ -1,2 +1,5 @@
-# Count AsciiDoc in the language bar (Linguist treats it as prose and hides it by default)
+# Language bar: GitHub's Linguist hides AsciiDoc twice over. It classifies
+# AsciiDoc as prose, and it treats a top-level docs/ folder as documentation.
+# In a documentation repository, both are the actual content, so count them.
 *.adoc linguist-detectable=true
+docs/** linguist-documentation=false
