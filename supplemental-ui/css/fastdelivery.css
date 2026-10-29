@@ -78,14 +78,19 @@
   line-height: 1;
 }
 
-.doc .admonitionblock td.icon i {
+/* The default UI colours each badge with a more specific selector
+   (td.icon i.icon-caution), so match that specificity and force the reset. */
+.doc .admonitionblock td.icon i,
+.doc .admonitionblock td.icon i[class*="icon-"] {
   display: inline-block;
   height: auto;
   width: auto;
   padding: 0;
   border-radius: 0;
-  background: none;
-  filter: none;
+  background: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
 }
 
 .doc .admonitionblock td.icon i::after {
