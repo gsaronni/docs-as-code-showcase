@@ -47,7 +47,7 @@ jobs:
         run: scripts/build-pdf.sh build
 
       - name: Upload the PDF as a workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fastdelivery-runbook-pdf
           path: build/fastdelivery-runbook.pdf
@@ -55,6 +55,6 @@ jobs:
 
       - name: Attach the PDF to the release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: build/fastdelivery-runbook.pdf
